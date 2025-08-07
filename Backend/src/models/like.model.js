@@ -1,0 +1,183 @@
+import mongoose from "mongoose";
+import Video from "./video.model.js";
+import Comment from "./comment.model.js";
+
+const likeSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User reference is required"],
+      index: true,
+    },
+    targetType: {
+      type: String,
+      required: [true, "Target type is required"],
+      enum: {
+        values: ["Video", "Comment"],
+        message: "Target type must be either 'Video' or 'Comment'",
+      },
+      index: true,
+    },
+    target: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: [true, "Target reference is required"],
+      index: true,
+      refPath: "targetType",
+    },
+    value: {
+      type: Number,
+      required: [true, "Like value is required"],
+      enum: {
+        values: [1, -1],
+        message: "Like value must be either 1 (like) or -1 (dislike)",
+      },
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret.__v;
+        delete ret._id;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret.__v;
+        delete ret._id;
+        return ret;
+      },
+    },
+  }
+);
+
+likeSchema.index({ user: 1, targetType: 1, target: 1 }, { unique: true });
+
+likeSchema.index({ targetType: 1, target: 1, value: 1 });
+
+// Static Methods
+
+/**
+ * Toggles a like/dislike on a target
+ * @param {mongoose.Types.ObjectId} userId - The user ID
+ * @param {"video"|"comment"} targetType - The target type
+ * @param {mongoose.Types.ObjectId} targetId - The target ID
+ * @param {1|-1} value - 1 for like, -1 for dislike
+ * @returns {Promise<{like: Document|null, operation: "created"|"updated"|"deleted"}>}
+ */
+likeSchema.statics.toggleLike = async function (
+  userId,
+  targetType,
+  targetId,
+  value
+) {
+  const existingLike = await this.findOne({
+    user: userId,
+    targetType,
+    target: targetId,
+  });
+
+  if (existingLike) {
+    if (existingLike.value === value) {
+      await existingLike.deleteOne();
+      return { like: null, operation: "deleted" };
+    } else {
+      existingLike.value = value;
+      await existingLike.save();
+      return { like: existingLike, operation: "updated" };
+    }
+  } else {
+    const newLike = await this.create({
+      user: userId,
+      targetType,
+      target: targetId,
+      value,
+    });
+    return { like: newLike, operation: "created" };
+  }
+};
+
+/**
+ * Gets like counts for a target
+ * @param {"video"|"comment"} targetType - The target type
+ * @param {mongoose.Types.ObjectId} targetId - The target ID
+ * @returns {Promise<{likes: number, dislikes: number}>}
+ */
+likeSchema.statics.getLikesCount = async function (targetType, targetId) {
+  console.log(targetId, targetType);
+  const result = await this.aggregate([
+    {
+      $match: {
+        targetType,
+        target: new mongoose.Types.ObjectId(targetId),
+      },
+    },
+    {
+      $group: {
+        _id: "$value",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  console.log(result);
+
+  const counts = { likes: 0, dislikes: 0 };
+  result.forEach((item) => {
+    if (item._id === 1) counts.likes = item.count;
+    if (item._id === -1) counts.dislikes = item.count;
+  });
+
+  return counts;
+};
+
+/**
+ * Gets a user's vote on a target
+ * @param {mongoose.Types.ObjectId} userId - The user ID
+ * @param {"video"|"comment"} targetType - The target type
+ * @param {mongoose.Types.ObjectId} targetId - The target ID
+ * @returns {Promise<1|-1|0>} - 1 (like), -1 (dislike), or 0 (no vote)
+ */
+likeSchema.statics.getUserVote = async function (userId, targetType, targetId) {
+  const like = await this.findOne({
+    user: userId,
+    targetType,
+    target: targetId,
+  });
+  return like ? like.value : 0;
+};
+
+likeSchema.post("save", async function (doc) {
+  await updateTargetLikeCounters(doc);
+});
+
+likeSchema.post("deleteOne", { document: true }, async function (doc) {
+  await updateTargetLikeCounters(doc);
+});
+
+/**
+ * Updates like counters on the target document
+ * @param {mongoose.Document} like - The like document
+ */
+async function updateTargetLikeCounters(like) {
+  const targetModel = like.targetType === "Video" ? Video : Comment;
+  const counts = await Like.getLikesCount(like.targetType, like.target);
+
+  await targetModel.updateOne(
+    { _id: like.target },
+    {
+      $set: {
+        "metadata.likes": counts.likes,
+        "metadata.dislikes": counts.dislikes,
+      },
+    }
+  );
+}
+
+const Like = mongoose.model("Like", likeSchema);
+
+export default Like;
