@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSingleVideo } from "../api/videos";
 import VideoPlayer from "../components/video/VideoPlayer";
-import { FaThumbsUp, FaThumbsDown, FaShare, FaSave } from "react-icons/fa";
+import { FaThumbsUp, FaThumbsDown, FaShare, FaSave, FaBars } from "react-icons/fa";
 import { formatViews, formatDate } from "../utils/format";
 import VideoCard from "../components/video/VideoCard";
 import { useAuth } from "../context/AuthContext";
@@ -15,6 +15,7 @@ const WatchPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedVideos, setRelatedVideos] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -48,83 +49,121 @@ const WatchPage = () => {
   if (!video) return <div className="text-center py-10">Video not found</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Main video content */}
-        <div className="lg:w-2/3">
-          <VideoPlayer video={video} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar Toggle Button */}
+      <div className="fixed top-20 left-4 z-50 lg:hidden">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <FaBars className="text-gray-600 dark:text-gray-300" />
+        </button>
+      </div>
 
-          <div className="mt-4">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-              {video.title}
-            </h1>
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-3 gap-3">
-              <div className="flex items-center">
-                <img
-                  src={
-                    video.channel.owner?.profile?.picture ||
-                    "https://via.placeholder.com/40"
-                  }
-                  alt={video.channel.name}
-                  className="w-10 h-10 rounded-full mr-3"
-                />
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-white">
-                    {video.channel.handle}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {formatViews(video.channel.stats.subscribers)} subscribers
-                  </p>
-                </div>
-                <button className="ml-4 px-4 py-1.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">
-                  Subscribe
-                </button>
-              </div>
-
-              <div className="flex space-x-2">
-                <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                  <FaThumbsUp className="mr-2" />
-                  <span>{formatViews(video.metadata.likes)}</span>
-                  <span className="mx-2">|</span>
-                  <FaThumbsDown />
-                </button>
-                <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                  <FaShare className="mr-2" />
-                  <span>Share</span>
-                </button>
-                <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                  <FaSave className="mr-2" />
-                  <span>Save</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="flex items-center mb-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                {formatViews(video.metadata.views)} views •{" "}
-                {formatDate(video.createdAt)}
-              </p>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
-              {video.description}
-            </p>
-          </div>
-
-          {/* Comments section would go here */}
-        </div>
-
-        {/* Related videos sidebar */}
-        <div className="lg:w-1/3">
-          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+      {/* Mobile Sidebar */}
+      <div
+        className={`fixed left-0 top-16 h-full w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Related Videos
-          </h2>
+          </h3>
           <div className="space-y-4">
             {relatedVideos.map((relatedVideo) => (
               <VideoCard key={relatedVideo._id} video={relatedVideo} />
             ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Main video content */}
+          <div className="lg:w-2/3">
+            <VideoPlayer video={video} />
+
+            <div className="mt-4">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                {video.title}
+              </h1>
+
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-3 gap-3">
+                <div className="flex items-center">
+                  <img
+                    src={
+                      video.channel.owner?.profile?.picture ||
+                      "https://via.placeholder.com/40"
+                    }
+                    alt={video.channel.name}
+                    className="w-10 h-10 rounded-full mr-3"
+                  />
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      {video.channel.handle}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {formatViews(video.channel.stats.subscribers)} subscribers
+                    </p>
+                  </div>
+                  <button className="ml-4 px-4 py-1.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">
+                    Subscribe
+                  </button>
+                </div>
+
+                <div className="flex space-x-2">
+                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <FaThumbsUp className="mr-2" />
+                    <span>{formatViews(video.metadata.likes)}</span>
+                    <span className="mx-2">|</span>
+                    <FaThumbsDown />
+                  </button>
+                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <FaShare className="mr-2" />
+                    <span>Share</span>
+                  </button>
+                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <FaSave className="mr-2" />
+                    <span>Save</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center mb-2">
+                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatViews(video.metadata.views)} views •{" "}
+                  {formatDate(video.createdAt)}
+                </p>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {video.description}
+              </p>
+            </div>
+
+            {/* Comments section would go here */}
+          </div>
+
+          {/* Related videos sidebar - Desktop only */}
+          <div className="hidden lg:block lg:w-1/3">
+            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+              Related Videos
+            </h2>
+            <div className="space-y-4">
+              {relatedVideos.map((relatedVideo) => (
+                <VideoCard key={relatedVideo._id} video={relatedVideo} />
+              ))}
+            </div>
           </div>
         </div>
       </div>

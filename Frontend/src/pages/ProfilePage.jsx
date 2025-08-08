@@ -46,7 +46,10 @@ const ProfilePage = () => {
             <div className="text-center mb-6">
               <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-4">
                 <img
-                  src={user.avatar || user.profile?.picture || "https://via.placeholder.com/96"}
+                  src={
+                    user.profile?.picture ||
+                    `https://ui-avatars.com/api/?name=${user.displayName}&background=random`
+                  }
                   alt={user.displayName || user.fullName || user.username}
                   className="w-full h-full object-cover"
                 />
@@ -73,11 +76,12 @@ const ProfilePage = () => {
                   {user.email}
                 </span>
               </div>
-              
+
               <div className="flex items-center space-x-3">
                 <FaCalendar className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-300">
-                  Joined {new Date(user.createdAt || Date.now()).toLocaleDateString()}
+                  Joined{" "}
+                  {new Date(user.createdAt || Date.now()).toLocaleDateString()}
                 </span>
               </div>
 
@@ -113,7 +117,9 @@ const ProfilePage = () => {
                 </label>
                 <input
                   type="text"
-                  value={user.displayName || user.fullName || user.username || ""}
+                  value={
+                    user.displayName || user.fullName || user.username || ""
+                  }
                   disabled={!isEditing}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
                 />
@@ -168,7 +174,7 @@ const ProfilePage = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
                 Channel Information
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -211,7 +217,7 @@ const ProfilePage = () => {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
               Account Actions
             </h3>
-            
+
             <div className="space-y-4">
               <button className="w-full text-left px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <div className="font-medium text-gray-900 dark:text-white">
@@ -247,4 +253,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

@@ -6,12 +6,14 @@ import {
   getSingleVideo,
   updateVideo,
   uploadVideo,
+  searchVideos,
 } from "../controllers/video.controller.js";
 
 const router = Router();
 
 // Public routes
 router.route("/").get(getAllVideos);
+router.route("/search").get(searchVideos);
 router.route("/:id").get(getSingleVideo);
 
 // Protected routes

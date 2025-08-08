@@ -1,5 +1,5 @@
 // src/components/layout/Header.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FaSearch,
@@ -13,14 +13,20 @@ import {
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import useDarkMode from "../../hooks/useDarkMode";
+import { getUserChannel } from "../../api/channel";
+import { useLocation } from "react-router-dom";
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { darkMode, toggleDarkMode } = useDarkMode();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Channel data is now handled centrally in AuthContext
+  // No need for duplicate channel fetching here
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -36,13 +42,17 @@ const Header = () => {
   };
 
   const getUserDisplayName = () => {
-    if (!user) return "";
-    return user.displayName || user.fullName || user.username || user.email?.split("@")[0] || "User";
+    return (
+      user.displayName ||
+      user.fullName ||
+      user.username ||
+      user.email?.split("@")[0] ||
+      "User"
+    );
   };
 
   const getUserAvatar = () => {
-    if (!user) return "https://via.placeholder.com/32";
-    return user.avatar || user.profile?.picture || "https://via.placeholder.com/32";
+    return user.profile?.picture;
   };
 
   const hasChannel = user?.channel && user.channel._id;
@@ -53,9 +63,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-16">
           {/* Left section */}
           <div className="flex items-center">
+            {/* Hamburger menu button - shows on all pages */}
             <button
-              className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 lg:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="mr-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              onClick={onMenuClick}
+              title="Toggle Sidebar"
             >
               <FaBars className="text-gray-600 dark:text-gray-300" />
             </button>
@@ -120,7 +132,7 @@ const Header = () => {
 
                 {/* Profile Menu */}
                 <div className="relative">
-                  <button 
+                  <button
                     className="flex items-center"
                     onClick={() => setProfileMenuOpen(!profileMenuOpen)}
                   >
@@ -147,7 +159,7 @@ const Header = () => {
                           </p>
                         )}
                       </div>
-                      
+
                       {/* Channel Section */}
                       {hasChannel ? (
                         <>
@@ -178,7 +190,7 @@ const Header = () => {
                           Create Channel
                         </Link>
                       )}
-                      
+
                       {/* User Settings Section */}
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-1">
                         <Link
@@ -198,15 +210,25 @@ const Header = () => {
                           Settings
                         </Link>
                       </div>
-                      
+
                       {/* Logout Section */}
                       <div className="border-t border-gray-200 dark:border-gray-700 pt-1">
                         <button
                           onClick={handleLogout}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
-                          <svg className="mr-3 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          <svg
+                            className="mr-3 h-4 w-4 text-gray-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            />
                           </svg>
                           Sign out
                         </button>
@@ -286,8 +308,8 @@ const Header = () => {
 
       {/* Click outside to close profile menu */}
       {profileMenuOpen && (
-        <div 
-          className="fixed inset-0 z-10" 
+        <div
+          className="fixed inset-0 z-10"
           onClick={() => setProfileMenuOpen(false)}
         />
       )}

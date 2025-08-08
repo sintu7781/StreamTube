@@ -1,55 +1,77 @@
 import { Link } from "react-router-dom";
 import { formatViews } from "../../utils/format";
+import { FaPlay, FaEye, FaClock } from "react-icons/fa";
 
 const VideoCard = ({ video }) => {
-  // console.log(video);
   if (!video) return null;
 
   return (
-    <div className="w-full mb-6">
+    <div className="group cursor-pointer">
+      {/* Video Thumbnail */}
       <Link to={`/watch/${video._id}`}>
-        <div className="relative aspect-video rounded-lg overflow-hidden mb-2">
+        <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 mb-3">
           <img
             src={video.thumbnail?.url || "https://via.placeholder.com/320x180"}
             alt={video.title}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1 py-0.5 rounded">
+          
+          {/* Duration Badge */}
+          <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded-md font-medium">
             {video.media?.duration
               ? formatDuration(video.media.duration)
               : "0:00"}
-          </span>
+          </div>
+          
+          {/* Play Button Overlay */}
+          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
+              <FaPlay className="text-gray-800 ml-1" />
+            </div>
+          </div>
         </div>
       </Link>
 
-      <div className="flex mt-2">
-        <Link to={`/c/${video.channel?.handle}`} className="flex-shrink-0 mr-3">
+      {/* Video Info */}
+      <div className="flex space-x-3">
+        {/* Channel Avatar */}
+        <Link to={`/c/${video.channel?.handle}`} className="flex-shrink-0">
           <img
             src={
               video.channel?.owner?.profile?.picture ||
               "https://via.placeholder.com/40"
             }
             alt={video.channel?.name}
-            className="w-9 h-9 rounded-full"
+            className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600"
           />
         </Link>
 
-        <div className="flex-1">
+        {/* Video Details */}
+        <div className="flex-1 min-w-0">
           <Link to={`/watch/${video._id}`}>
-            <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2">
+            <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 text-sm leading-tight mb-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
               {video.title}
             </h3>
           </Link>
+          
           <Link
             to={`/c/${video.channel?.handle}`}
-            className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+            className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium"
           >
             {video.channel?.name}
           </Link>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {formatViews(video.metadata?.views || 0)} views •{" "}
-            {formatDate(video.createdAt)}
-          </p>
+          
+          <div className="flex items-center space-x-2 mt-1">
+            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+              <FaEye className="mr-1" />
+              <span>{formatViews(video.metadata?.views || 0)}</span>
+            </div>
+            <span className="text-gray-400">•</span>
+            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+              <FaClock className="mr-1" />
+              <span>{formatDate(video.createdAt)}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

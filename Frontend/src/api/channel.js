@@ -1,27 +1,26 @@
 import axiosInstance from "../lib/axios";
-import { CHANNEL_ENDPOINTS } from "./endpoints";
 
-export const getChannelByHandle = async (handle) => {
-  const response = await axiosInstance.get(CHANNEL_ENDPOINTS.GET_CHANNEL(handle));
-  return response.data;
-};
-
-export const getChannelVideos = async (handle) => {
-  const response = await axiosInstance.get(CHANNEL_ENDPOINTS.GET_CHANNEL_VIDEOS(handle));
+export const getUserChannel = async () => {
+  const response = await axiosInstance.get("/v1/channels/me");
   return response.data;
 };
 
 export const createChannel = async (channelData) => {
-  const response = await axiosInstance.post(CHANNEL_ENDPOINTS.CREATE_CHANNEL, channelData);
+  const response = await axiosInstance.post("/v1/channels", channelData);
+  return response.data;
+};
+
+export const getChannelByHandle = async (handle) => {
+  const response = await axiosInstance.get(`/v1/channels/${handle}`);
   return response.data;
 };
 
 export const updateChannel = async (channelData) => {
-  const response = await axiosInstance.post(CHANNEL_ENDPOINTS.UPDATE_CHANNEL, channelData);
+  const response = await axiosInstance.patch("/v1/channels/me", channelData);
   return response.data;
 };
 
-export const getMyChannel = async () => {
-  const response = await axiosInstance.get("/api/v1/channels");
+export const deleteChannel = async () => {
+  const response = await axiosInstance.delete("/v1/channels/me");
   return response.data;
 };

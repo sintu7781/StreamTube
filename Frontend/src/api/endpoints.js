@@ -29,11 +29,12 @@ export const VIDEO_ENDPOINTS = {
 };
 
 export const CHANNEL_ENDPOINTS = {
+  GET_MY_CHANNEL: `${API_VERSION}/channels/me`,
   GET_CHANNEL: (handle) => `${API_VERSION}/channels/${handle}`,
   GET_CHANNEL_VIDEOS: (handle) => `${API_VERSION}/channels/${handle}/videos`,
-  CREATE_CHANNEL: `${API_VERSION}/channels/create`,
-  UPDATE_CHANNEL: (id) => `${API_VERSION}/channels/${id}`,
-  DELETE_CHANNEL: (id) => `${API_VERSION}/channels/${id}`,
+  CREATE_CHANNEL: `${API_VERSION}/channels`,
+  UPDATE_CHANNEL: `${API_VERSION}/channels/me`,
+  DELETE_CHANNEL: `${API_VERSION}/channels/me`,
 };
 
 export const COMMENT_ENDPOINTS = {

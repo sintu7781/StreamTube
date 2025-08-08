@@ -27,4 +27,24 @@ export const uploadVideo = async (formData) => {
   return response.data;
 };
 
-// Add other video-related API calls as needed
+// Search functionality
+export const searchVideos = async (query) => {
+  const response = await axiosInstance.get(
+    `/v1/videos/search?q=${encodeURIComponent(query)}`
+  );
+  return response.data;
+};
+
+export const searchChannels = async (query) => {
+  const response = await axiosInstance.get(
+    `/v1/channels/search?q=${encodeURIComponent(query)}`
+  );
+  return response.data;
+};
+
+export const getChannelVideos = async (handle, page = 1, limit = 10) => {
+  const response = await axiosInstance.get(
+    `/v1/channels/${handle}/videos?page=${page}&limit=${limit}`
+  );
+  return response.data;
+};

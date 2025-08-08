@@ -23,7 +23,9 @@ const options = {
 // Mock function for sending verification email (replace with actual implementation)
 const sendVerificationEmail = async (email, token) => {
   // TODO: Implement actual email sending logic
-  console.log(`Verification email would be sent to ${email} with token: ${token}`);
+  console.log(
+    `Verification email would be sent to ${email} with token: ${token}`
+  );
   return true;
 };
 
@@ -76,7 +78,6 @@ const signupUser = asyncHandler(async (req, res) => {
       throw new ApiError(409, "Email is already registered");
     }
   }
-
   const user = await User.create({
     username,
     email,
@@ -84,6 +85,7 @@ const signupUser = asyncHandler(async (req, res) => {
     authMethod: "email",
     isVerified: false, // Will be true after email verification
   });
+  user.profile.picture = `https://ui-avatars.com/api/?name=${user.displayName}&background=random`;
 
   const verificationToken = user.generateVerificationToken();
   await user.save({ validateBeforeSave: false });
@@ -151,7 +153,7 @@ const googleSignup = asyncHandler(async (req, res) => {
       email: googleUser.email,
       username: await generateHandle(googleUser.name),
       fullName: googleUser.name,
-      avatar: googleUser.picture,
+      "profile.picture": googleUser.picture,
       authMethod: "google",
       isVerified: true,
       googleId: googleUser.sub,
@@ -204,7 +206,7 @@ const githubSignup = asyncHandler(async (req, res) => {
       email: githubUser.email,
       username: githubUser.login,
       fullName: githubUser.name || githubUser.login,
-      avatar: githubUser.avatar_url,
+      "profile.picture": githubUser.avatar_url,
       authMethod: "github",
       githubId: githubUser.id,
       isVerified: true,

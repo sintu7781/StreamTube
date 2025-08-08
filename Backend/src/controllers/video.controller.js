@@ -66,10 +66,12 @@ const uploadVideo = asyncHandler(async (req, res) => {
       duration: videoUpload.duration,
       aspectRatio: videoUpload.aspect_ratio,
     },
-    thumbnail: uploadthumbnail ? {
-      url: uploadthumbnail.secure_url,
-      key: uploadthumbnail.public_id,
-    } : undefined,
+    thumbnail: uploadthumbnail
+      ? {
+          url: uploadthumbnail.secure_url,
+          key: uploadthumbnail.public_id,
+        }
+      : undefined,
   });
 
   if (!video) {
@@ -98,12 +100,8 @@ const getSingleVideo = asyncHandler(async (req, res) => {
   }
 
   // Increment views using the proper method
-  await video.incrementViews({
-    userId: req.user?._id,
-    sessionId: req.sessionID,
-    ipAddress: req.ip,
-    userAgent: req.get('User-Agent'),
-  });
+  video.views += 1;
+  await video.save();
 
   return res
     .status(200)
@@ -112,25 +110,50 @@ const getSingleVideo = asyncHandler(async (req, res) => {
 
 const getChannelVideos = asyncHandler(async (req, res) => {
   const { handle } = req.params;
+  const { page = 1, limit = 10 } = req.query;
 
-  if (!handle) {
-    throw new ApiError(400, "Channel handle is required");
-  }
-
-  const channel = await Channel.findOne({ handle });
+  const channel = await Channel.findOne({ handle }).populate("owner");
 
   if (!channel) {
     throw new ApiError(404, "Channel not found");
   }
 
-  const videos = await Video.find({
-    channel: channel.id,
-    visibility: "public",
-  }).sort({ createdAt: -1 });
+  const skip = (page - 1) * limit;
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, videos, "Channel videos fetched successfully"));
+  const videos = await Video.find({
+    channel: channel._id,
+    visibility: "public",
+  })
+    .populate({
+      path: "channel",
+      select: "name handle stats",
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalVideos = await Video.countDocuments({
+    channel: channel._id,
+    visibility: "public",
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videos,
+        channel,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalVideos / limit),
+          totalVideos,
+          hasNextPage: skip + videos.length < totalVideos,
+          hasPrevPage: page > 1,
+        },
+      },
+      "Channel videos fetched successfully"
+    )
+  );
 });
 
 const updateVideo = asyncHandler(async (req, res) => {
@@ -190,8 +213,13 @@ const updateVideo = asyncHandler(async (req, res) => {
 });
 
 const getAllVideos = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = req.query;
-  
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
+
   const skip = (page - 1) * limit;
   const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
 
@@ -210,10 +238,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   const totalVideos = await Video.countDocuments({ visibility: "public" });
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
         videos,
         pagination: {
           currentPage: parseInt(page),
@@ -222,8 +250,76 @@ const getAllVideos = asyncHandler(async (req, res) => {
           hasNextPage: skip + videos.length < totalVideos,
           hasPrevPage: page > 1,
         },
-      }, "All videos fetched successfully")
-    );
+      },
+      "All videos fetched successfully"
+    )
+  );
+});
+
+const searchVideos = asyncHandler(async (req, res) => {
+  const { q: query, page = 1, limit = 10 } = req.query;
+
+  if (!query || query.trim() === "") {
+    throw new ApiError(400, "Search query is required");
+  }
+
+  const skip = (page - 1) * limit;
+  const searchRegex = new RegExp(query, "i");
+
+  const videos = await Video.find({
+    $and: [
+      { visibility: "public" },
+      {
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex },
+          { tags: { $in: [searchRegex] } },
+        ],
+      },
+    ],
+  })
+    .populate({
+      path: "channel",
+      select: "name handle stats",
+      populate: {
+        path: "owner",
+        select: "profile",
+      },
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalVideos = await Video.countDocuments({
+    $and: [
+      { visibility: "public" },
+      {
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex },
+          { tags: { $in: [searchRegex] } },
+        ],
+      },
+    ],
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videos,
+        query,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalVideos / limit),
+          totalVideos,
+          hasNextPage: skip + videos.length < totalVideos,
+          hasPrevPage: page > 1,
+        },
+      },
+      "Search results fetched successfully"
+    )
+  );
 });
 
 export {
@@ -232,4 +328,5 @@ export {
   getChannelVideos,
   updateVideo,
   getAllVideos,
+  searchVideos,
 };

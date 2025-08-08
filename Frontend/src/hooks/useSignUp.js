@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { signupUser, signupWithGoogle, signupWithGitHub } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 const useSignup = () => {
   const auth = useAuth();
   const navigate = useNavigate();
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(null);
 
   if (!auth) {
     throw new Error("useSignup must be used within an AuthProvider");
@@ -13,61 +15,67 @@ const useSignup = () => {
 
   const { login } = auth;
 
-  // Email/password signup mutation
-  const emailSignupMutation = useMutation({
-    mutationFn: (data) => signupUser(data),
-    onSuccess: (data) => {
-      if (data.requiresVerification) {
+  const handleSignup = async (data) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const response = await signupUser(data);
+      if (response.requiresVerification) {
         navigate("/verify-email", {
-          state: { email: data.email },
+          state: { email: response.email },
         });
       } else {
-        login(data.token, data.user);
+        login(response.token, response.user);
         navigate("/dashboard");
       }
-    },
-  });
+    } catch (err) {
+      console.error("Signup failed:", err);
+      setError(err.response?.data?.message || "Signup failed");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
-  // Google signup mutation
-  const googleSignupMutation = useMutation({
-    mutationFn: (credential) => signupWithGoogle(credential),
-    onSuccess: (data) => {
+  const handleGoogleSignup = async (credential) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const data = await signupWithGoogle(credential);
       if (data?.token && data?.user) {
         login(data.token, data.user);
         navigate("/dashboard");
       }
-    },
-    onError: (error) => {
-      console.error("Google signup failed:", error);
-    },
-  });
+    } catch (err) {
+      console.error("Google signup failed:", err);
+      setError(err.response?.data?.message || "Google signup failed");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
-  // GitHub signup mutation
-  const gitHubSignupMutation = useMutation({
-    mutationFn: (code) => signupWithGitHub(code),
-    onSuccess: (data) => {
+  const handleGitHubSignup = async (code) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const data = await signupWithGitHub(code);
       if (data?.token) {
         login(data.token, data.user);
         navigate("/dashboard");
       }
-    },
-    onError: (error) => {
-      console.error("GitHub signup failed:", error);
-    },
-  });
+    } catch (err) {
+      console.error("GitHub signup failed:", err);
+      setError(err.response?.data?.message || "GitHub signup failed");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return {
-    isPending:
-      emailSignupMutation.isPending ||
-      googleSignupMutation.isPending ||
-      gitHubSignupMutation.isPending,
-    error:
-      emailSignupMutation.error ||
-      googleSignupMutation.error ||
-      gitHubSignupMutation.error,
-    signupMutation: emailSignupMutation.mutate,
-    signupWithGoogle: googleSignupMutation.mutate,
-    signupWithGitHub: gitHubSignupMutation.mutate,
+    isPending,
+    error,
+    signupMutation: handleSignup,
+    signupWithGoogle: handleGoogleSignup,
+    signupWithGitHub: handleGitHubSignup,
   };
 };
 

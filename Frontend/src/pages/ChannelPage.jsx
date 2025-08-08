@@ -1,7 +1,8 @@
 // src/pages/ChannelPage.jsx
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getChannelByHandle, getChannelVideos } from "../api/channel";
+import { getChannelByHandle } from "../api/channel";
+import { getChannelVideos } from "../api/videos";
 import VideoCard from "../components/video/VideoCard";
 import Spinner from "../components/common/Spinner";
 
@@ -22,7 +23,7 @@ const ChannelPage = () => {
         ]);
 
         setChannel(channelData.data);
-        setVideos(videosData.data || []);
+        setVideos(videosData.data.videos || []);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load channel");
       } finally {
@@ -36,8 +37,10 @@ const ChannelPage = () => {
   }, [handle]);
 
   if (loading) return <Spinner />;
-  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
-  if (!channel) return <div className="text-center py-10">Channel not found</div>;
+  if (error)
+    return <div className="text-center py-10 text-red-500">{error}</div>;
+  if (!channel)
+    return <div className="text-center py-10">Channel not found</div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
@@ -46,7 +49,10 @@ const ChannelPage = () => {
         <div className="flex items-center space-x-6">
           <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
             <img
-              src={channel.owner?.profile?.picture || "https://via.placeholder.com/96"}
+              src={
+                channel.owner?.profile?.picture ||
+                `https://ui-avatars.com/api/?name=${handle}&background=random`
+              }
               alt={channel.name}
               className="w-full h-full object-cover"
             />
@@ -80,7 +86,7 @@ const ChannelPage = () => {
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
           Videos
         </h2>
-        
+
         {videos.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {videos.map((video) => (

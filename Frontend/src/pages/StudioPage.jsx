@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { getMyChannel } from "../api/channel";
+import { getUserChannel } from "../api/channel";
 import Spinner from "../components/common/Spinner";
 import { FaVideo, FaChartLine, FaCog, FaUpload } from "react-icons/fa";
 
@@ -16,7 +16,7 @@ const StudioPage = () => {
     const fetchChannel = async () => {
       try {
         setLoading(true);
-        const response = await getMyChannel();
+        const response = await getUserChannel();
         setChannel(response.data);
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load channel");
@@ -50,7 +50,8 @@ const StudioPage = () => {
   }
 
   if (loading) return <Spinner />;
-  if (error) return <div className="text-center py-10 text-red-500">{error}</div>;
+  if (error)
+    return <div className="text-center py-10 text-red-500">{error}</div>;
   if (!channel) {
     return (
       <div className="max-w-md mx-auto mt-20 text-center">
@@ -87,7 +88,10 @@ const StudioPage = () => {
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
             <img
-              src={channel.owner?.profile?.picture || "https://via.placeholder.com/64"}
+              src={
+                channel.owner?.profile?.picture ||
+                "https://via.placeholder.com/64"
+              }
               alt={channel.name}
               className="w-full h-full object-cover"
             />
@@ -122,7 +126,9 @@ const StudioPage = () => {
         >
           <FaUpload className="text-2xl mb-3" />
           <h3 className="font-semibold mb-1">Upload Video</h3>
-          <p className="text-sm opacity-90">Share your content with the world</p>
+          <p className="text-sm opacity-90">
+            Share your content with the world
+          </p>
         </button>
 
         <button
@@ -170,7 +176,7 @@ const StudioPage = () => {
               </p>
             </div>
           </div>
-          
+
           {channel.stats?.videos === 0 && (
             <div className="text-center py-8">
               <FaVideo className="text-4xl text-gray-400 mx-auto mb-4" />
@@ -194,4 +200,4 @@ const StudioPage = () => {
   );
 };
 
-export default StudioPage; 
+export default StudioPage;

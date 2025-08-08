@@ -1,0 +1,246 @@
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  FaHome,
+  FaHistory,
+  FaUser,
+  FaCog,
+  FaHeart,
+  FaYoutube,
+  FaVideo,
+  FaPlay,
+  FaClock,
+  FaThumbsUp,
+  FaEye,
+  FaUsers,
+  FaBookmark,
+  FaDownload,
+  FaFlag,
+  FaQuestionCircle,
+  FaInfoCircle,
+  FaShieldAlt,
+  FaGavel,
+  FaCopyright,
+  FaBars,
+  FaTimes,
+  FaComment,
+  FaChartLine,
+  FaGamepad,
+  FaMusic,
+  FaFilm,
+  FaNewspaper,
+  FaGraduationCap,
+  FaLightbulb,
+  FaDumbbell,
+} from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
+
+const Sidebar = ({ isOpen, onClose, onToggle }) => {
+  const location = useLocation();
+  const { user } = useAuth();
+  const [showFooter, setShowFooter] = useState(false);
+
+  const mainNavItems = [
+    { icon: FaHome, label: "Home", path: "/" },
+    { icon: FaHistory, label: "History", path: "/history" },
+    { icon: FaHeart, label: "Liked Videos", path: "/liked" },
+    { icon: FaComment, label: "Liked Comments", path: "/liked-comments" },
+    { icon: FaBookmark, label: "Watch Later", path: "/watch-later" },
+  ];
+
+  // Categories section
+  const categories = [
+    { name: "All", icon: null, path: "/?category=all" },
+    { name: "Music", icon: FaMusic, path: "/?category=music" },
+    { name: "Gaming", icon: FaGamepad, path: "/?category=gaming" },
+    { name: "Movies", icon: FaFilm, path: "/?category=movies" },
+    { name: "News", icon: FaNewspaper, path: "/?category=news" },
+    { name: "Education", icon: FaGraduationCap, path: "/?category=education" },
+    { name: "Technology", icon: FaLightbulb, path: "/?category=technology" },
+    { name: "Sports", icon: FaDumbbell, path: "/?category=sports" },
+    { name: "Entertainment", icon: FaUsers, path: "/?category=entertainment" },
+  ];
+
+  const subscriptionItems = [
+    { icon: FaYoutube, label: "Music", handle: "music" },
+    { icon: FaVideo, label: "Gaming", handle: "gaming" },
+    { icon: FaPlay, label: "Sports", handle: "sports" },
+    { icon: FaUsers, label: "Education", handle: "education" },
+  ];
+
+  const userItems = [
+    { icon: FaUser, label: "Your Channel", path: user?.channel ? `/c/${user.channel.handle}` : "/create-channel" },
+    { icon: FaVideo, label: "Studio", path: "/studio" },
+    { icon: FaCog, label: "Settings", path: "/settings" },
+    { icon: FaChartLine, label: "Analytics", path: "/analytics" },
+  ];
+
+  const footerItems = [
+    { icon: FaInfoCircle, label: "About", path: "/about" },
+    { icon: FaFlag, label: "Report", path: "/report" },
+    { icon: FaQuestionCircle, label: "Help", path: "/help" },
+    { icon: FaShieldAlt, label: "Privacy", path: "/privacy" },
+    { icon: FaGavel, label: "Terms", path: "/terms" },
+    { icon: FaCopyright, label: "Copyright", path: "/copyright" },
+  ];
+
+  const isActive = (path) => {
+    if (path === "/" && location.pathname === "/") return true;
+    if (path !== "/" && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  const NavItem = ({ item, onClick }) => (
+    <Link
+      to={item.path}
+      onClick={onClick}
+      className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+        isActive(item.path)
+          ? "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+      }`}
+    >
+      <item.icon className="mr-3 h-5 w-5" />
+      {item.label}
+    </Link>
+  );
+
+  return (
+    <>
+      {/* Overlay for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`fixed left-0 top-16 h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 transform transition-transform duration-300 ease-in-out ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:translate-x-0 lg:static lg:z-auto`}
+      >
+        <div className="flex flex-col h-full">
+          {/* Main Navigation */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 py-6">
+              {/* Main Nav Items */}
+              <div className="space-y-2 mb-8">
+                {mainNavItems.map((item) => (
+                  <NavItem key={item.label} item={item} onClick={onClose} />
+                ))}
+              </div>
+
+              {/* Categories Section */}
+              <div className="mb-8">
+                <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                  Explore
+                </h3>
+                <div className="space-y-1">
+                  {categories.map((category) => {
+                    const IconComponent = category.icon;
+                    const isActiveCategory = location.search.includes(`category=${category.name.toLowerCase()}`) || (category.name === "All" && !location.search.includes("category="));
+                    return (
+                      <Link
+                        key={category.name}
+                        to={category.path}
+                        onClick={onClose}
+                        className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          isActiveCategory
+                            ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        }`}
+                      >
+                        {IconComponent && <IconComponent className="mr-3 h-4 w-4" />}
+                        <span className="text-sm">{category.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Subscriptions Section */}
+              <div className="mb-8">
+                <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                  Subscriptions
+                </h3>
+                <div className="space-y-2">
+                  {subscriptionItems.map((item) => (
+                    <Link
+                      key={item.label}
+                      to={`/c/${item.handle}`}
+                      onClick={onClose}
+                      className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      <item.icon className="mr-3 h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* User Section */}
+              {user && (
+                <div className="mb-8">
+                  <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+                    You
+                  </h3>
+                  <div className="space-y-2">
+                    {userItems.map((item) => (
+                      <NavItem key={item.label} item={item} onClick={onClose} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer Section Toggle */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <button
+                  onClick={() => setShowFooter(!showFooter)}
+                  className="flex items-center justify-between w-full px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <span>More from StreamTube</span>
+                  <svg
+                    className={`h-4 w-4 transform transition-transform ${
+                      showFooter ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {/* Footer Items */}
+                {showFooter && (
+                  <div className="mt-2 space-y-2">
+                    {footerItems.map((item) => (
+                      <NavItem key={item.label} item={item} onClick={onClose} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Section */}
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              <p className="mb-2">© 2024 StreamTube</p>
+              <p>Made with ❤️ for creators</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Sidebar; 
