@@ -216,6 +216,29 @@ commentSchema.methods.restore = async function () {
 
 commentSchema.post("save", async function (doc) {
   await updateTargetCommentCounter(doc);
+  
+  // Create notifications for new comments
+  if (doc.isNew && !doc.isDeleted) {
+    try {
+      const NotificationService = (await import("../services/notification.service.js")).default;
+      
+      if (doc.parentComment) {
+        // This is a reply to another comment
+        await NotificationService.createCommentReplyNotification(doc.user, doc.parentComment, doc._id);
+      } else {
+        // This is a comment on a video
+        await NotificationService.createVideoCommentNotification(doc.user, doc.video, doc._id);
+      }
+      
+      // Check for mentions in the comment and create notifications
+      const mentions = NotificationService.extractMentions(doc.content);
+      if (mentions.length > 0) {
+        await NotificationService.createCommentMentionNotifications(doc.user, doc._id, mentions);
+      }
+    } catch (error) {
+      console.error("Error creating comment notifications:", error);
+    }
+  }
 });
 
 async function updateTargetCommentCounter(comment) {

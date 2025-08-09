@@ -48,3 +48,11 @@ export const getChannelVideos = async (handle, page = 1, limit = 10) => {
   );
   return response.data;
 };
+
+// Get related videos
+export const getRelatedVideos = async (videoId, limit = 12) => {
+  const response = await axiosInstance.get(
+    VIDEO_ENDPOINTS.GET_RELATED_VIDEOS(videoId) + `?limit=${limit}`
+  );
+  return response.data;
+};

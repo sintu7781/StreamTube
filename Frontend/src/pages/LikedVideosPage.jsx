@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaHeart, FaEye, FaSearch, FaFilter, FaSort } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { getLikedVideos } from "../api/likes";
 import VideoCard from "../components/video/VideoCard";
 
 const LikedVideosPage = () => {
@@ -11,122 +12,54 @@ const LikedVideosPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("recent"); // recent, oldest, title, views
   const [filterBy, setFilterBy] = useState("all"); // all, today, week, month
-
-  // Mock data for demonstration
-  const mockLikedVideos = [
-    {
-      _id: "1",
-      title: "How to Build a React App",
-      description: "Learn the basics of React development with this comprehensive tutorial",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "12:34",
-      views: 1500,
-      likes: 234,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      likedAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-      channel: {
-        name: "Tech Tutorials",
-        handle: "tech-tutorials",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "2",
-      title: "JavaScript ES6 Features",
-      description: "Modern JavaScript features you need to know for modern development",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "18:45",
-      views: 2300,
-      likes: 456,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      likedAt: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
-      channel: {
-        name: "Code Masters",
-        handle: "code-masters",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "3",
-      title: "CSS Grid Layout Tutorial",
-      description: "Master CSS Grid for modern responsive layouts",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "25:12",
-      views: 890,
-      likes: 123,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      likedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-      channel: {
-        name: "Web Design Pro",
-        handle: "web-design-pro",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "4",
-      title: "Node.js Backend Development",
-      description: "Build scalable backend applications with Node.js",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "42:18",
-      views: 3100,
-      likes: 789,
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
-      likedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
-      channel: {
-        name: "Backend Dev",
-        handle: "backend-dev",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "5",
-      title: "Python Data Science",
-      description: "Introduction to data science with Python",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "35:20",
-      views: 1800,
-      likes: 345,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
-      likedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days ago
-      channel: {
-        name: "Data Science Hub",
-        handle: "data-science-hub",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-  ];
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Simulate API call
     const fetchLikedVideos = async () => {
       setIsLoading(true);
+      setError("");
       try {
-        // In a real app, you would fetch from API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setLikedVideos(mockLikedVideos);
+        const response = await getLikedVideos();
+        if (response.success) {
+          setLikedVideos(response.data.likedVideos || []);
+        } else {
+          setError("Failed to load liked videos");
+        }
       } catch (error) {
         console.error("Error fetching liked videos:", error);
+        setError("Failed to load liked videos");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchLikedVideos();
-  }, []);
+    if (user) {
+      fetchLikedVideos();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const unlikeVideo = (videoId) => {
-    setLikedVideos(likedVideos.filter(video => video._id !== videoId));
+    setLikedVideos(likedVideos.filter((item) => item.target?._id !== videoId));
   };
 
   const filterAndSortVideos = () => {
-    let filtered = likedVideos;
+    let filtered = likedVideos.filter((item) => item.target); // Only include items with valid targets
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(video =>
-        video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        video.channel.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        video.description.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (item) =>
+          item.target?.title
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          item.target?.channel?.name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          item.target?.description
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
       );
     }
 
@@ -134,22 +67,22 @@ const LikedVideosPage = () => {
     const now = new Date();
     switch (filterBy) {
       case "today":
-        filtered = filtered.filter(video => {
-          const likedDate = new Date(video.likedAt);
+        filtered = filtered.filter((item) => {
+          const likedDate = new Date(item.createdAt);
           return likedDate.toDateString() === now.toDateString();
         });
         break;
       case "week":
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(video => {
-          const likedDate = new Date(video.likedAt);
+        filtered = filtered.filter((item) => {
+          const likedDate = new Date(item.createdAt);
           return likedDate >= weekAgo;
         });
         break;
       case "month":
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(video => {
-          const likedDate = new Date(video.likedAt);
+        filtered = filtered.filter((item) => {
+          const likedDate = new Date(item.createdAt);
           return likedDate >= monthAgo;
         });
         break;
@@ -160,16 +93,21 @@ const LikedVideosPage = () => {
     // Apply sorting
     switch (sortBy) {
       case "recent":
-        filtered.sort((a, b) => new Date(b.likedAt) - new Date(a.likedAt));
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         break;
       case "oldest":
-        filtered.sort((a, b) => new Date(a.likedAt) - new Date(b.likedAt));
+        filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
         break;
       case "title":
-        filtered.sort((a, b) => a.title.localeCompare(b.title));
+        filtered.sort((a, b) =>
+          (a.target?.title || "").localeCompare(b.target?.title || "")
+        );
         break;
       case "views":
-        filtered.sort((a, b) => b.views - a.views);
+        filtered.sort(
+          (a, b) =>
+            (b.target?.metadata?.views || 0) - (a.target?.metadata?.views || 0)
+        );
         break;
       default:
         break;
@@ -316,21 +254,26 @@ const LikedVideosPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredVideos.map((video) => (
-              <div key={video._id} className="relative group">
-                <VideoCard video={video} />
-                <button
-                  onClick={() => unlikeVideo(video._id)}
-                  className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                  title="Unlike video"
-                >
-                  <FaHeart />
-                </button>
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                  Liked {formatTimeAgo(video.likedAt)}
+            {filteredVideos.map((item) => {
+              const video = item.target;
+              if (!video) return null;
+
+              return (
+                <div key={item._id || video._id} className="relative group">
+                  <VideoCard video={video} />
+                  <button
+                    onClick={() => unlikeVideo(video._id)}
+                    className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 z-10"
+                    title="Unlike video"
+                  >
+                    <FaHeart />
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded z-10">
+                    Liked {formatTimeAgo(item.createdAt)}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -341,11 +284,13 @@ const LikedVideosPage = () => {
               <div className="flex items-center space-x-4">
                 <FaHeart className="text-red-600" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {filteredVideos.length} liked video{filteredVideos.length !== 1 ? "s" : ""}
+                  {filteredVideos.length} liked video
+                  {filteredVideos.length !== 1 ? "s" : ""}
                 </span>
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                Showing {filteredVideos.length} of {likedVideos.length} total liked videos
+                Showing {filteredVideos.length} of {likedVideos.length} total
+                liked videos
               </div>
             </div>
           </div>

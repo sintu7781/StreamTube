@@ -1,20 +1,17 @@
-// src/components/layout/Header.jsx
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FaSearch,
-  FaUserCircle,
   FaVideo,
   FaBell,
   FaBars,
   FaCog,
   FaUser,
-  FaYoutube,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import useDarkMode from "../../hooks/useDarkMode";
-import { getUserChannel } from "../../api/channel";
 import { useLocation } from "react-router-dom";
+import NotificationDropdown from "../Notification/NotificationDropdown";
 
 const Header = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +49,20 @@ const Header = ({ onMenuClick }) => {
   };
 
   const getUserAvatar = () => {
-    return user.profile?.picture;
+    // Try multiple paths for avatar URL
+    const avatarUrl = 
+      user.profile?.picture || 
+      user.avatar || 
+      user.profilePicture || 
+      user.profile?.avatar;
+    
+    // If no avatar URL found, generate a default one based on user name
+    if (!avatarUrl) {
+      const name = getUserDisplayName();
+      return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
+    }
+    
+    return avatarUrl;
   };
 
   const hasChannel = user?.channel && user.channel._id;
@@ -115,20 +125,19 @@ const Header = ({ onMenuClick }) => {
 
             {user ? (
               <>
-                <Link
-                  to="/upload"
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                  title="Upload Video"
-                >
-                  <FaVideo className="text-gray-600 dark:text-gray-300" />
-                </Link>
+                {/* Upload button - only show for users with channels */}
+                {hasChannel && (
+                  <Link
+                    to="/upload"
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                    title="Upload Video"
+                  >
+                    <FaVideo className="text-gray-600 dark:text-gray-300" />
+                  </Link>
+                )}
 
-                <button className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 relative">
-                  <FaBell className="text-gray-600 dark:text-gray-300" />
-                  <span className="absolute top-1 right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    3
-                  </span>
-                </button>
+                {/* Notification Dropdown */}
+                <NotificationDropdown />
 
                 {/* Profile Menu */}
                 <div className="relative">
@@ -140,6 +149,11 @@ const Header = ({ onMenuClick }) => {
                       src={getUserAvatar()}
                       alt={getUserDisplayName()}
                       className="w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600"
+                      onError={(e) => {
+                        // Fallback to default avatar if image fails to load
+                        const name = getUserDisplayName();
+                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=128`;
+                      }}
                     />
                   </button>
 
@@ -168,7 +182,7 @@ const Header = ({ onMenuClick }) => {
                             className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={() => setProfileMenuOpen(false)}
                           >
-                            <FaYoutube className="mr-3 text-red-600" />
+                            <FaVideo className="mr-3 text-red-600" />
                             Your Channel
                           </Link>
                           <Link
@@ -176,7 +190,9 @@ const Header = ({ onMenuClick }) => {
                             className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                             onClick={() => setProfileMenuOpen(false)}
                           >
-                            <FaVideo className="mr-3 text-gray-500" />
+                            <svg className="mr-3 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
                             Studio
                           </Link>
                         </>
@@ -186,7 +202,7 @@ const Header = ({ onMenuClick }) => {
                           className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                           onClick={() => setProfileMenuOpen(false)}
                         >
-                          <FaYoutube className="mr-3 text-red-600" />
+                          <FaVideo className="mr-3 text-red-600" />
                           Create Channel
                         </Link>
                       )}

@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const createChannel = asyncHandler(async (req, res) => {
   const { name, description } = req.body;
@@ -46,6 +47,30 @@ const customizeChannel = asyncHandler(async (req, res) => {
     updates.description = description;
   }
 
+  // Handle avatar upload
+  if (req.file) {
+    const avatarLocalPath = req.file?.path;
+
+    if (!avatarLocalPath) {
+      throw new ApiError(400, "Avatar file is missing");
+    }
+
+    const avatar = await uploadOnCloudinary(
+      avatarLocalPath,
+      "image",
+      "channel_avatars"
+    );
+
+    if (!avatar.secure_url) {
+      throw new ApiError(500, "Error while uploading avatar");
+    }
+
+    updates.avatar = {
+      url: avatar.secure_url,
+      key: avatar.public_id,
+    };
+  }
+
   if (Object.keys(updates).length === 0) {
     throw new ApiError(400, "No updates provided");
   }
@@ -57,7 +82,10 @@ const customizeChannel = asyncHandler(async (req, res) => {
       new: true,
       runValidators: true,
     }
-  );
+  ).populate({
+    path: "owner",
+    select: "profile",
+  });
 
   if (!updatedChannel) {
     throw new ApiError(404, "Channel not found");
@@ -179,4 +207,98 @@ const deleteChannel = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, {}, "Channel deleted successfully"));
 });
 
-export { createChannel, customizeChannel, getChannel, getUserChannel, getChannelByHandle, searchChannels, deleteChannel };
+// Upload/update channel avatar
+const updateChannelAvatar = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, "Channel avatar file is required");
+  }
+
+  if (!req.user.channel) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  const avatarLocalPath = req.file.path;
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    "image",
+    "channel_avatars"
+  );
+
+  if (!avatar.secure_url) {
+    throw new ApiError(500, "Error while uploading channel avatar");
+  }
+
+  const updatedChannel = await Channel.findByIdAndUpdate(
+    req.user.channel,
+    {
+      $set: {
+        avatar: {
+          url: avatar.secure_url,
+          key: avatar.public_id,
+        },
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).populate({
+    path: "owner",
+    select: "profile",
+  });
+
+  if (!updatedChannel) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedChannel, "Channel avatar updated successfully")
+    );
+});
+
+// Remove channel avatar
+const removeChannelAvatar = asyncHandler(async (req, res) => {
+  if (!req.user.channel) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  const updatedChannel = await Channel.findByIdAndUpdate(
+    req.user.channel,
+    {
+      $unset: {
+        avatar: "",
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).populate({
+    path: "owner",
+    select: "profile",
+  });
+
+  if (!updatedChannel) {
+    throw new ApiError(404, "Channel not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedChannel, "Channel avatar removed successfully")
+    );
+});
+
+export { 
+  createChannel, 
+  customizeChannel, 
+  getChannel, 
+  getUserChannel, 
+  getChannelByHandle, 
+  searchChannels, 
+  deleteChannel,
+  updateChannelAvatar,
+  removeChannelAvatar 
+};

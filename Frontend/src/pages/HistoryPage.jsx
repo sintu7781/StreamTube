@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaHistory, FaClock, FaTrash, FaEye, FaCalendar } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import VideoCard from "../components/video/VideoCard";
+import {
+  getWatchHistory,
+  removeFromHistory as removeFromHistoryAPI,
+  clearHistory as clearHistoryAPI,
+} from "../api/history";
+import { formatViews, formatTimeAgo, formatDuration } from "../utils/format";
 
 const HistoryPage = () => {
   const { user } = useAuth();
@@ -10,91 +15,58 @@ const HistoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("all"); // all, today, week, month
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Mock data for demonstration
-  const mockHistory = [
-    {
-      _id: "1",
-      title: "How to Build a React App",
-      description: "Learn the basics of React development",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "12:34",
-      views: 1500,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      channel: {
-        name: "Tech Tutorials",
-        handle: "tech-tutorials",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "2",
-      title: "JavaScript ES6 Features",
-      description: "Modern JavaScript features you need to know",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "18:45",
-      views: 2300,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      channel: {
-        name: "Code Masters",
-        handle: "code-masters",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "3",
-      title: "CSS Grid Layout Tutorial",
-      description: "Master CSS Grid for modern layouts",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "25:12",
-      views: 890,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-      channel: {
-        name: "Web Design Pro",
-        handle: "web-design-pro",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-    {
-      _id: "4",
-      title: "Node.js Backend Development",
-      description: "Build scalable backend applications",
-      thumbnail: "https://via.placeholder.com/320x180",
-      duration: "42:18",
-      views: 3100,
-      createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
-      channel: {
-        name: "Backend Dev",
-        handle: "backend-dev",
-        avatar: "https://via.placeholder.com/40x40",
-      },
-    },
-  ];
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // Simulate API call
     const fetchHistory = async () => {
       setIsLoading(true);
+      setError("");
       try {
-        // In a real app, you would fetch from API
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setHistory(mockHistory);
+        const response = await getWatchHistory();
+        if (response.success) {
+          setHistory(response.data.history || []);
+        } else {
+          setError("Failed to load watch history");
+        }
       } catch (error) {
         console.error("Error fetching history:", error);
+        setError("Failed to load watch history");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchHistory();
-  }, []);
+    if (user) {
+      fetchHistory();
+    } else {
+      setIsLoading(false);
+    }
+  }, [user]);
 
-  const clearHistory = () => {
-    setHistory([]);
+  const clearHistoryHandler = async () => {
+    if (
+      window.confirm(
+        "Are you sure you want to clear your entire watch history? This action cannot be undone."
+      )
+    ) {
+      try {
+        await clearHistoryAPI();
+        setHistory([]);
+      } catch (error) {
+        console.error("Error clearing history:", error);
+        alert("Failed to clear history. Please try again.");
+      }
+    }
   };
 
-  const removeFromHistory = (videoId) => {
-    setHistory(history.filter(video => video._id !== videoId));
+  const removeFromHistoryHandler = async (videoId) => {
+    try {
+      await removeFromHistoryAPI(videoId);
+      setHistory(history.filter((item) => item.video._id !== videoId));
+    } catch (error) {
+      console.error("Error removing from history:", error);
+      alert("Failed to remove video from history. Please try again.");
+    }
   };
 
   const filterHistory = () => {
@@ -104,23 +76,23 @@ const HistoryPage = () => {
     const now = new Date();
     switch (filter) {
       case "today":
-        filtered = filtered.filter(video => {
-          const videoDate = new Date(video.createdAt);
-          return videoDate.toDateString() === now.toDateString();
+        filtered = filtered.filter((item) => {
+          const watchedDate = new Date(item.watchedAt);
+          return watchedDate.toDateString() === now.toDateString();
         });
         break;
       case "week":
         const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(video => {
-          const videoDate = new Date(video.createdAt);
-          return videoDate >= weekAgo;
+        filtered = filtered.filter((item) => {
+          const watchedDate = new Date(item.watchedAt);
+          return watchedDate >= weekAgo;
         });
         break;
       case "month":
         const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        filtered = filtered.filter(video => {
-          const videoDate = new Date(video.createdAt);
-          return videoDate >= monthAgo;
+        filtered = filtered.filter((item) => {
+          const watchedDate = new Date(item.watchedAt);
+          return watchedDate >= monthAgo;
         });
         break;
       default:
@@ -129,9 +101,14 @@ const HistoryPage = () => {
 
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(video =>
-        video.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        video.channel.name.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (item) =>
+          item.video?.title
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          item.video?.channel?.name
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase())
       );
     }
 
@@ -182,7 +159,7 @@ const HistoryPage = () => {
               </h1>
             </div>
             <button
-              onClick={clearHistory}
+              onClick={clearHistoryHandler}
               className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
             >
               <FaTrash className="mr-2" />
@@ -265,72 +242,91 @@ const HistoryPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredHistory.map((video) => (
-              <div
-                key={video._id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
-              >
-                <div className="flex items-start space-x-4">
-                  {/* Thumbnail */}
-                  <div className="relative flex-shrink-0">
-                    <img
-                      src={video.thumbnail}
-                      alt={video.title}
-                      className="w-48 h-27 object-cover rounded-lg"
-                    />
-                    <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                      {video.duration}
-                    </div>
-                  </div>
+            {filteredHistory.map((item) => {
+              const video = item.video;
+              if (!video) return null;
 
-                  {/* Video Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                          <Link
-                            to={`/watch/${video._id}`}
-                            className="hover:text-blue-600 dark:hover:text-blue-400"
-                          >
-                            {video.title}
-                          </Link>
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
-                          {video.description}
-                        </p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                          <Link
-                            to={`/c/${video.channel.handle}`}
-                            className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
-                          >
-                            <img
-                              src={video.channel.avatar}
-                              alt={video.channel.name}
-                              className="w-6 h-6 rounded-full mr-2"
-                            />
-                            {video.channel.name}
-                          </Link>
-                          <span>{video.views.toLocaleString()} views</span>
-                          <span className="flex items-center">
-                            <FaClock className="mr-1" />
-                            {formatTimeAgo(video.createdAt)}
-                          </span>
-                        </div>
+              return (
+                <div
+                  key={item._id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"
+                >
+                  <div className="flex items-start space-x-4">
+                    {/* Thumbnail */}
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={video.thumbnail?.url}
+                        alt={video.title}
+                        className="w-48 h-27 object-cover rounded-lg"
+                      />
+                      <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                        {formatDuration(video.media?.duration || 0)}
                       </div>
+                      {/* Watch progress bar */}
+                      {item.watchPercentage > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-600">
+                          <div
+                            className="h-full bg-red-600"
+                            style={{ width: `${item.watchPercentage}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Remove Button */}
-                      <button
-                        onClick={() => removeFromHistory(video._id)}
-                        className="ml-4 p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                        title="Remove from history"
-                      >
-                        <FaTrash />
-                      </button>
+                    {/* Video Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                            <Link
+                              to={`/watch/${video._id}`}
+                              className="hover:text-blue-600 dark:hover:text-blue-400"
+                            >
+                              {video.title}
+                            </Link>
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                            {video.description}
+                          </p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                            <Link
+                              to={`/c/${video.channel?.handle}`}
+                              className="flex items-center hover:text-blue-600 dark:hover:text-blue-400"
+                            >
+                              <img
+                                src={
+                                  video.channel?.owner?.profile?.picture ||
+                                  `https://ui-avatars.com/api/?name=${video.channel.name}&background=random`
+                                }
+                                alt={video.channel?.name}
+                                className="w-6 h-6 rounded-full mr-2"
+                              />
+                              {video.channel?.name}
+                            </Link>
+                            <span>
+                              {formatViews(video.metadata?.views || 0)}
+                            </span>
+                            <span className="flex items-center">
+                              <FaClock className="mr-1" />
+                              Watched {formatTimeAgo(item.watchedAt)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Remove Button */}
+                        <button
+                          onClick={() => removeFromHistoryHandler(video._id)}
+                          className="ml-4 p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                          title="Remove from history"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -341,11 +337,12 @@ const HistoryPage = () => {
               <div className="flex items-center space-x-4">
                 <FaCalendar className="text-gray-400" />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {filteredHistory.length} video{filteredHistory.length !== 1 ? "s" : ""} in history
+                  {filteredHistory.length} video
+                  {filteredHistory.length !== 1 ? "s" : ""} in history
                 </span>
               </div>
               <button
-                onClick={clearHistory}
+                onClick={clearHistoryHandler}
                 className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
               >
                 Clear all history

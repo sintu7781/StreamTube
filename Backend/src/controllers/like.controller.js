@@ -64,4 +64,126 @@ const getUserLikeVideos = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, like, "All like fetched successfully"));
 });
 
-export { toggleLike, getLikeCounts, getUserLikeVideos };
+// Get user's liked videos
+const getUserLikedVideos = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
+  const likedVideos = await Like.find({
+    user: userId,
+    targetType: "Video",
+    value: 1, // Only likes, not dislikes
+  })
+    .populate({
+      path: "target",
+      select: "title description thumbnail media visibility tags createdAt metadata",
+      populate: {
+        path: "channel",
+        select: "name handle stats",
+        populate: {
+          path: "owner",
+          select: "profile",
+        },
+      },
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalLikedVideos = await Like.countDocuments({
+    user: userId,
+    targetType: "Video",
+    value: 1,
+  });
+
+  // Filter out any null targets (deleted videos)
+  const validLikedVideos = likedVideos.filter(like => like.target !== null);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        likedVideos: validLikedVideos,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalLikedVideos / limit),
+          totalItems: totalLikedVideos,
+          hasNextPage: skip + validLikedVideos.length < totalLikedVideos,
+          hasPrevPage: page > 1,
+        },
+      },
+      "Liked videos fetched successfully"
+    )
+  );
+});
+
+// Get user's liked comments
+const getUserLikedComments = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
+  const likedComments = await Like.find({
+    user: userId,
+    targetType: "Comment",
+    value: 1, // Only likes, not dislikes
+  })
+    .populate({
+      path: "target",
+      select: "content createdAt metadata",
+      populate: [
+        {
+          path: "user",
+          select: "profile username fullName",
+        },
+        {
+          path: "video",
+          select: "title thumbnail",
+          populate: {
+            path: "channel",
+            select: "name handle",
+          },
+        },
+      ],
+    })
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalLikedComments = await Like.countDocuments({
+    user: userId,
+    targetType: "Comment",
+    value: 1,
+  });
+
+  // Filter out any null targets (deleted comments)
+  const validLikedComments = likedComments.filter(like => like.target !== null);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        likedComments: validLikedComments,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalLikedComments / limit),
+          totalItems: totalLikedComments,
+          hasNextPage: skip + validLikedComments.length < totalLikedComments,
+          hasPrevPage: page > 1,
+        },
+      },
+      "Liked comments fetched successfully"
+    )
+  );
+});
+
+export { 
+  toggleLike, 
+  getLikeCounts, 
+  getUserLikeVideos, 
+  getUserLikedVideos,
+  getUserLikedComments 
+};

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { formatViews } from "../../utils/format";
-import { FaPlay, FaEye, FaClock } from "react-icons/fa";
+import { formatViews, formatDuration, formatTimeAgo } from "../../utils/format";
+import { FaPlay } from "react-icons/fa";
 
 const VideoCard = ({ video }) => {
   if (!video) return null;
@@ -11,18 +11,18 @@ const VideoCard = ({ video }) => {
       <Link to={`/watch/${video._id}`}>
         <div className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 dark:bg-gray-700 mb-3">
           <img
-            src={video.thumbnail?.url || "https://via.placeholder.com/320x180"}
+            src={video.thumbnail?.url}
             alt={video.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-          
+
           {/* Duration Badge */}
           <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded-md font-medium">
             {video.media?.duration
               ? formatDuration(video.media.duration)
               : "0:00"}
           </div>
-          
+
           {/* Play Button Overlay */}
           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
             <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
@@ -39,7 +39,7 @@ const VideoCard = ({ video }) => {
           <img
             src={
               video.channel?.owner?.profile?.picture ||
-              "https://via.placeholder.com/40"
+              `https://ui-avatars.com/api/?name=${video.channel?.name}&background=random`
             }
             alt={video.channel?.name}
             className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-600"
@@ -53,46 +53,23 @@ const VideoCard = ({ video }) => {
               {video.title}
             </h3>
           </Link>
-          
+
           <Link
             to={`/c/${video.channel?.handle}`}
             className="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-medium"
           >
             {video.channel?.name}
           </Link>
-          
-          <div className="flex items-center space-x-2 mt-1">
-            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-              <FaEye className="mr-1" />
-              <span>{formatViews(video.metadata?.views || 0)}</span>
-            </div>
-            <span className="text-gray-400">•</span>
-            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
-              <FaClock className="mr-1" />
-              <span>{formatDate(video.createdAt)}</span>
-            </div>
+
+          <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+            <span>{formatViews(video.metadata?.views || 0)}</span>
+            <span>•</span>
+            <span>{formatTimeAgo(video.createdAt)}</span>
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-// Helper function to format duration
-const formatDuration = (seconds) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-};
-
-// Helper function to format date
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 };
 
 export default VideoCard;

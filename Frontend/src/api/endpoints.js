@@ -23,6 +23,7 @@ export const USER_ENDPOINTS = {
 export const VIDEO_ENDPOINTS = {
   GET_ALL_VIDEOS: `${API_VERSION}/videos`,
   GET_SINGLE_VIDEO: (id) => `${API_VERSION}/videos/${id}`,
+  GET_RELATED_VIDEOS: (id) => `${API_VERSION}/videos/${id}/related`,
   UPLOAD_VIDEO: `${API_VERSION}/videos/upload`,
   UPDATE_VIDEO: (id) => `${API_VERSION}/videos/${id}`,
   DELETE_VIDEO: (id) => `${API_VERSION}/videos/${id}`,
@@ -45,6 +46,28 @@ export const COMMENT_ENDPOINTS = {
 };
 
 export const LIKE_ENDPOINTS = {
-  TOGGLE_LIKE: (videoId) => `${API_VERSION}/likes/video/${videoId}`,
-  GET_LIKES: (videoId) => `${API_VERSION}/likes/video/${videoId}`,
+  TOGGLE_LIKE: `${API_VERSION}/likes/toggle`,
+  GET_LIKES: `${API_VERSION}/likes/count`,
+  GET_LIKED_VIDEOS: `${API_VERSION}/likes/liked-videos`,
+  GET_LIKED_COMMENTS: `${API_VERSION}/likes/liked-comments`,
+};
+
+export const WATCH_HISTORY_ENDPOINTS = {
+  GET_HISTORY: `${API_VERSION}/watch-history`,
+  ADD_HISTORY: `${API_VERSION}/watch-history/add`,
+  REMOVE_FROM_HISTORY: (videoId) =>
+    `${API_VERSION}/watch-history/remove/${videoId}`,
+  CLEAR_HISTORY: `${API_VERSION}/watch-history/clear`,
+};
+
+export const NOTIFICATION_ENDPOINTS = {
+  GET_NOTIFICATION: (page, limit) =>
+    `${API_VERSION}/notifications?page=${page}&limit=${limit}`,
+  GET_UNREAD_COUNT: `${API_VERSION}/notifications/unread-count`,
+  MARK_AS_READ: `${API_VERSION}/notifications/mark-read`,
+  MARK_ALL_AS_READ: `${API_VERSION}/notifications/mark-all-read`,
+  DELETE_NOTIFICATION: (notificationId) =>
+    `${API_VERSION}/notifications/${notificationId}`,
+  GET_NOTIFICATION_BY_ID: (notificationId) =>
+    `${API_VERSION}/notifications/${notificationId}`,
 };

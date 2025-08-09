@@ -39,6 +39,11 @@ axiosInstance.interceptors.response.use(
 
     // If 401 and not already trying to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // Don't try to refresh token for auth-related endpoints
+      if (originalRequest.url?.includes('/auth/')) {
+        return Promise.reject(error);
+      }
+
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
@@ -69,9 +74,16 @@ axiosInstance.interceptors.response.use(
         originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
         return axiosInstance(originalRequest);
       } catch (err) {
+        console.warn("Token refresh failed:", err);
         processQueue(err, null);
-        // Clear invalid token
-        localStorage.removeItem("authToken");
+        // Only clear token if refresh actually failed, not on network errors
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          localStorage.removeItem("authToken");
+          // Force page reload to reinitialize auth context
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

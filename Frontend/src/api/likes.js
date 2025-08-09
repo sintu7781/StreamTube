@@ -1,9 +1,10 @@
-import { api } from "./endpoints";
+import axiosInstance from "../lib/axios";
+import { LIKE_ENDPOINTS } from "./endpoints";
 
 // Get user's liked videos
 export const getLikedVideos = async (params = {}) => {
   try {
-    const response = await api.get("/likes/videos", { params });
+    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKED_VIDEOS, { params });
     return response.data;
   } catch (error) {
     throw error;
@@ -13,87 +14,60 @@ export const getLikedVideos = async (params = {}) => {
 // Get user's liked comments
 export const getLikedComments = async (params = {}) => {
   try {
-    const response = await api.get("/likes/comments", { params });
+    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKED_COMMENTS, { params });
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-// Like a video
-export const likeVideo = async (videoId) => {
+// Toggle like on video
+export const toggleVideoLike = async (videoId, value = 1) => {
   try {
-    const response = await api.post("/likes/videos", { videoId });
+    const response = await axiosInstance.post(LIKE_ENDPOINTS.TOGGLE_LIKE, {
+      targetType: "Video",
+      targetId: videoId,
+      value
+    });
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-// Unlike a video
-export const unlikeVideo = async (videoId) => {
+// Toggle like on comment
+export const toggleCommentLike = async (commentId, value = 1) => {
   try {
-    const response = await api.delete(`/likes/videos/${videoId}`);
+    const response = await axiosInstance.post(LIKE_ENDPOINTS.TOGGLE_LIKE, {
+      targetType: "Comment",
+      targetId: commentId,
+      value
+    });
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-// Like a comment
-export const likeComment = async (commentId) => {
+// Get like counts for a target
+export const getLikeCounts = async (targetType, targetId) => {
   try {
-    const response = await api.post("/likes/comments", { commentId });
+    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKES, {
+      params: { targetType, targetId }
+    });
     return response.data;
   } catch (error) {
     throw error;
   }
 };
 
-// Unlike a comment
-export const unlikeComment = async (commentId) => {
+// Check user's vote on a target
+export const getUserVote = async (targetType, targetId) => {
   try {
-    const response = await api.delete(`/likes/comments/${commentId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Check if video is liked
-export const checkVideoLiked = async (videoId) => {
-  try {
-    const response = await api.get(`/likes/videos/${videoId}/check`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Check if comment is liked
-export const checkCommentLiked = async (commentId) => {
-  try {
-    const response = await api.get(`/likes/comments/${commentId}/check`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Get liked videos count
-export const getLikedVideosCount = async () => {
-  try {
-    const response = await api.get("/likes/videos/count");
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Get liked comments count
-export const getLikedCommentsCount = async () => {
-  try {
-    const response = await api.get("/likes/comments/count");
+    const response = await axiosInstance.post("/v1/likes/all-likes", {
+      targetType,
+      targetId
+    });
     return response.data;
   } catch (error) {
     throw error;

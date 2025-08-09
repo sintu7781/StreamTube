@@ -91,4 +91,69 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedUser, "Account update successfuly"));
 });
 
-export { changeCurrentPassword, getCurrentUser, updateAccountDetails };
+// Upload/update user profile picture
+const updateProfilePicture = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw new ApiError(400, "Profile picture file is required");
+  }
+
+  const avatarLocalPath = req.file.path;
+  const avatar = await uploadOnCloudinary(
+    avatarLocalPath,
+    "image",
+    "user_profiles"
+  );
+
+  if (!avatar.secure_url) {
+    throw new ApiError(500, "Error while uploading profile picture");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        "profile.picture": avatar.secure_url,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -__v");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Profile picture updated successfully")
+    );
+});
+
+// Remove user profile picture
+const removeProfilePicture = asyncHandler(async (req, res) => {
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: {
+        "profile.picture": "",
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -__v");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Profile picture removed successfully")
+    );
+});
+
+export { 
+  changeCurrentPassword, 
+  getCurrentUser, 
+  updateAccountDetails, 
+  updateProfilePicture,
+  removeProfilePicture 
+};

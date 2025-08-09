@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Video from "../models/video.model.js";
 import Channel from "../models/channel.model.js";
+import WatchHistory from "../models/watchHistory.model.js";
 
 const fileUpload = async (path, resource_type, folder) => {
   if (!path) {
@@ -85,6 +86,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
 
 const getSingleVideo = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  const userId = req.user?._id;
 
   const video = await Video.findById(id).populate({
     path: "channel",
@@ -100,8 +102,29 @@ const getSingleVideo = asyncHandler(async (req, res) => {
   }
 
   // Increment views using the proper method
-  video.views += 1;
+  video.metadata.views += 1;
   await video.save();
+
+  // Add to watch history if user is authenticated
+  if (userId) {
+    try {
+      const deviceInfo = {
+        userAgent: req.get("User-Agent"),
+        ipAddress: req.ip || req.connection.remoteAddress,
+        deviceType: getDeviceType(req.get("User-Agent")),
+      };
+      
+      await WatchHistory.addOrUpdateWatchHistory(userId, id, {
+        watchDuration: 0,
+        watchPercentage: 0,
+        completed: false,
+        deviceInfo,
+      });
+    } catch (error) {
+      console.error("Error adding to watch history:", error);
+      // Don't fail the request if watch history fails
+    }
+  }
 
   return res
     .status(200)
@@ -322,6 +345,136 @@ const searchVideos = asyncHandler(async (req, res) => {
   );
 });
 
+// Get related videos based on tags, channel, and popularity
+const getRelatedVideos = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { limit = 12 } = req.query;
+
+  const currentVideo = await Video.findById(id).select("tags channel title");
+  if (!currentVideo) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  // Build aggregation pipeline for related videos
+  const pipeline = [
+    {
+      $match: {
+        _id: { $ne: currentVideo._id },
+        visibility: "public",
+        $or: [
+          // Same channel videos (highest priority)
+          { channel: currentVideo.channel },
+          // Videos with matching tags
+          { tags: { $in: currentVideo.tags } },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        relevanceScore: {
+          $add: [
+            // Same channel bonus
+            { $cond: [{ $eq: ["$channel", currentVideo.channel] }, 10, 0] },
+            // Tag match bonus
+            {
+              $multiply: [
+                { $size: { $setIntersection: ["$tags", currentVideo.tags] } },
+                2,
+              ],
+            },
+            // Popularity bonus (views normalized)
+            { $divide: ["$metadata.views", 1000] },
+            // Recency bonus
+            {
+              $divide: [
+                { $subtract: [new Date(), "$createdAt"] },
+                86400000, // 1 day in milliseconds
+              ],
+            },
+          ],
+        },
+      },
+    },
+    { $sort: { relevanceScore: -1, "metadata.views": -1, createdAt: -1 } },
+    { $limit: parseInt(limit) },
+    {
+      $lookup: {
+        from: "channels",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channel",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [{ $project: { profile: 1 } }],
+            },
+          },
+          { $unwind: "$owner" },
+          { $project: { name: 1, handle: 1, stats: 1, owner: 1 } },
+        ],
+      },
+    },
+    { $unwind: "$channel" },
+    {
+      $project: {
+        relevanceScore: 0, // Remove from final output
+      },
+    },
+  ];
+
+  const relatedVideos = await Video.aggregate(pipeline);
+
+  // If we don't have enough related videos, fetch popular videos
+  if (relatedVideos.length < parseInt(limit)) {
+    const remainingLimit = parseInt(limit) - relatedVideos.length;
+    const relatedVideoIds = relatedVideos.map(v => v._id);
+    
+    const popularVideos = await Video.find({
+      _id: { $nin: [...relatedVideoIds, currentVideo._id] },
+      visibility: "public",
+    })
+      .populate({
+        path: "channel",
+        select: "name handle stats",
+        populate: {
+          path: "owner",
+          select: "profile",
+        },
+      })
+      .sort({ "metadata.views": -1, createdAt: -1 })
+      .limit(remainingLimit);
+
+    relatedVideos.push(...popularVideos);
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, relatedVideos, "Related videos fetched successfully")
+    );
+});
+
+// Helper function to determine device type
+function getDeviceType(userAgent) {
+  if (!userAgent) return "desktop";
+  
+  const ua = userAgent.toLowerCase();
+  
+  if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) {
+    return "mobile";
+  } else if (ua.includes("tablet") || ua.includes("ipad")) {
+    return "tablet";
+  } else if (ua.includes("smart-tv") || ua.includes("smarttv")) {
+    return "tv";
+  }
+  
+  return "desktop";
+}
+
 export {
   uploadVideo,
   getSingleVideo,
@@ -329,4 +482,5 @@ export {
   updateVideo,
   getAllVideos,
   searchVideos,
+  getRelatedVideos,
 };

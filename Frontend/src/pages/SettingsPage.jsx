@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import useDarkMode from "../hooks/useDarkMode";
+import ProfilePictureUpload from "../components/common/ProfilePictureUpload";
+import { updateProfilePicture, removeProfilePicture } from "../api/settings";
 import {
   FaUser,
   FaLock,
@@ -19,6 +21,7 @@ const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState("profile");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [pictureLoading, setPictureLoading] = useState(false);
 
   const [profileData, setProfileData] = useState({
     displayName: user?.displayName || "",
@@ -107,6 +110,40 @@ const SettingsPage = () => {
     }
   };
 
+  const handleProfilePictureUpload = async (file) => {
+    setPictureLoading(true);
+    setMessage("");
+
+    try {
+      const response = await updateProfilePicture(file);
+      updateUser(response.data);
+      setMessage("Profile picture updated successfully!");
+      
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage("Failed to update profile picture. Please try again.");
+    } finally {
+      setPictureLoading(false);
+    }
+  };
+
+  const handleProfilePictureRemove = async () => {
+    setPictureLoading(true);
+    setMessage("");
+
+    try {
+      const response = await removeProfilePicture();
+      updateUser(response.data);
+      setMessage("Profile picture removed successfully!");
+      
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      setMessage("Failed to remove profile picture. Please try again.");
+    } finally {
+      setPictureLoading(false);
+    }
+  };
+
   const TabButton = ({ tab }) => (
     <button
       onClick={() => setActiveTab(tab.id)}
@@ -123,6 +160,23 @@ const SettingsPage = () => {
 
   const renderProfileTab = () => (
     <div className="space-y-6">
+      {/* Profile Picture Section */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Profile Picture
+        </h3>
+        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+          <ProfilePictureUpload
+            currentImage={user?.profile?.picture || user?.avatar}
+            onImageUpload={handleProfilePictureUpload}
+            onImageRemove={handleProfilePictureRemove}
+            isLoading={pictureLoading}
+            size="large"
+            type="user"
+          />
+        </div>
+      </div>
+      
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Profile Information

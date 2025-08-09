@@ -7,6 +7,7 @@ import {
   updateVideo,
   uploadVideo,
   searchVideos,
+  getRelatedVideos,
 } from "../controllers/video.controller.js";
 
 const router = Router();
@@ -15,6 +16,7 @@ const router = Router();
 router.route("/").get(getAllVideos);
 router.route("/search").get(searchVideos);
 router.route("/:id").get(getSingleVideo);
+router.route("/:id/related").get(getRelatedVideos);
 
 // Protected routes
 router.use(verifyJWT);

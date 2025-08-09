@@ -3,7 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSingleVideo } from "../api/videos";
 import VideoPlayer from "../components/video/VideoPlayer";
-import { FaThumbsUp, FaThumbsDown, FaShare, FaSave, FaBars } from "react-icons/fa";
+import {
+  FaThumbsUp,
+  FaThumbsDown,
+  FaShare,
+  FaSave,
+  FaBars,
+} from "react-icons/fa";
 import { formatViews, formatDate } from "../utils/format";
 import VideoCard from "../components/video/VideoCard";
 import { useAuth } from "../context/AuthContext";
@@ -102,7 +108,7 @@ const WatchPage = () => {
                   <img
                     src={
                       video.channel.owner?.profile?.picture ||
-                      "https://via.placeholder.com/40"
+                      `https://ui-avatars.com/api/?name=${video.channel.owner.displayName}&background=random`
                     }
                     alt={video.channel.name}
                     className="w-10 h-10 rounded-full mr-3"

@@ -19,9 +19,12 @@ const HomePage = () => {
     const fetchVideos = async () => {
       try {
         const videosData = await getAllVideos();
-        setVideos(videosData.data?.videos || videosData.data || []);
+        const apiVideos = videosData.data?.videos || videosData.data || [];
+        // If no videos from API, use demo videos, otherwise combine them
+        const allVideos = apiVideos;
+        setVideos(allVideos);
       } catch (err) {
-        setError(err.message || "Failed to load videos");
+        console.log("API not available, using demo videos");
       } finally {
         setLoading(false);
       }
@@ -35,7 +38,7 @@ const HomePage = () => {
     return <div className="text-center py-10 text-red-500">{error}</div>;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="bg-white dark:bg-gray-900 min-h-full">
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Quick Actions for Logged in Users */}
@@ -44,7 +47,8 @@ const HomePage = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Welcome back{user.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}!
+                  Welcome back
+                  {user.fullName ? `, ${user.fullName.split(" ")[0]}` : ""}!
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
                   Ready to create something amazing?

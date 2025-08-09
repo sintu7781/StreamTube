@@ -49,7 +49,7 @@ const SearchPage = () => {
     const now = new Date();
     const diffTime = Math.abs(now - date);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 1) return "1 day ago";
     if (diffDays < 7) return `${diffDays} days ago`;
     if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
@@ -80,7 +80,9 @@ const SearchPage = () => {
           Search results for "{query}"
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          {loading ? "Searching..." : `${videos.length + channels.length} results found`}
+          {loading
+            ? "Searching..."
+            : `${videos.length + channels.length} results found`}
         </p>
       </div>
 
@@ -149,7 +151,10 @@ const SearchPage = () => {
                     <div className="p-6">
                       <div className="flex items-center mb-4">
                         <img
-                          src={channel.avatar || "https://via.placeholder.com/60"}
+                          src={
+                            channel.avatar ||
+                            `https://ui-avatars.com/api/?name=${channel.name}&background=random`
+                          }
                           alt={channel.name}
                           className="w-15 h-15 rounded-full mr-4"
                         />
@@ -162,18 +167,21 @@ const SearchPage = () => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        <span>{formatViewCount(channel.stats?.subscribers || 0)} subscribers</span>
+                        <span>
+                          {formatViewCount(channel.stats?.subscribers || 0)}{" "}
+                          subscribers
+                        </span>
                         <span>{channel.stats?.videos || 0} videos</span>
                       </div>
-                      
+
                       {channel.description && (
                         <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-4">
                           {channel.description}
                         </p>
                       )}
-                      
+
                       <button className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
                         Subscribe
                       </button>
@@ -199,4 +207,4 @@ const SearchPage = () => {
   );
 };
 
-export default SearchPage; 
+export default SearchPage;

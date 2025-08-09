@@ -1,9 +1,9 @@
-import { api } from "./endpoints";
+import axiosInstance from "../lib/axios";
 
 // Get user settings
 export const getUserSettings = async () => {
   try {
-    const response = await api.get("/users/settings");
+    const response = await axiosInstance.get("/users/settings");
     return response.data;
   } catch (error) {
     throw error;
@@ -13,7 +13,7 @@ export const getUserSettings = async () => {
 // Update user profile
 export const updateUserProfile = async (profileData) => {
   try {
-    const response = await api.put("/users/profile", profileData);
+    const response = await axiosInstance.put("/users/profile", profileData);
     return response.data;
   } catch (error) {
     throw error;
@@ -23,7 +23,7 @@ export const updateUserProfile = async (profileData) => {
 // Update privacy settings
 export const updatePrivacySettings = async (privacySettings) => {
   try {
-    const response = await api.put("/users/privacy", privacySettings);
+    const response = await axiosInstance.put("/users/privacy", privacySettings);
     return response.data;
   } catch (error) {
     throw error;
@@ -33,7 +33,10 @@ export const updatePrivacySettings = async (privacySettings) => {
 // Update notification settings
 export const updateNotificationSettings = async (notificationSettings) => {
   try {
-    const response = await api.put("/users/notifications", notificationSettings);
+    const response = await axiosInstance.put(
+      "/users/notifications",
+      notificationSettings
+    );
     return response.data;
   } catch (error) {
     throw error;
@@ -43,7 +46,10 @@ export const updateNotificationSettings = async (notificationSettings) => {
 // Update appearance settings
 export const updateAppearanceSettings = async (appearanceSettings) => {
   try {
-    const response = await api.put("/users/appearance", appearanceSettings);
+    const response = await axiosInstance.put(
+      "/users/appearance",
+      appearanceSettings
+    );
     return response.data;
   } catch (error) {
     throw error;
@@ -53,7 +59,7 @@ export const updateAppearanceSettings = async (appearanceSettings) => {
 // Change password
 export const changePassword = async (passwordData) => {
   try {
-    const response = await api.put("/users/password", passwordData);
+    const response = await axiosInstance.put("/users/password", passwordData);
     return response.data;
   } catch (error) {
     throw error;
@@ -63,7 +69,9 @@ export const changePassword = async (passwordData) => {
 // Delete account
 export const deleteAccount = async (confirmationData) => {
   try {
-    const response = await api.delete("/users/account", { data: confirmationData });
+    const response = await axiosInstance.delete("/users/account", {
+      data: confirmationData,
+    });
     return response.data;
   } catch (error) {
     throw error;
@@ -73,7 +81,7 @@ export const deleteAccount = async (confirmationData) => {
 // Export user data
 export const exportUserData = async () => {
   try {
-    const response = await api.get("/users/export");
+    const response = await axiosInstance.get("/users/export");
     return response.data;
   } catch (error) {
     throw error;
@@ -83,7 +91,69 @@ export const exportUserData = async () => {
 // Get account activity
 export const getAccountActivity = async (params = {}) => {
   try {
-    const response = await api.get("/users/activity", { params });
+    const response = await axiosInstance.get("/users/activity", { params });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update user profile picture
+export const updateProfilePicture = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append("profilePicture", file);
+
+    const response = await axiosInstance.patch(
+      "/users/profile-picture",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Remove user profile picture
+export const removeProfilePicture = async () => {
+  try {
+    const response = await axiosInstance.delete("/users/profile-picture");
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Update channel avatar
+export const updateChannelAvatar = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append("channelAvatar", file);
+
+    const response = await axiosInstance.patch(
+      "/channels/me/avatar",
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Remove channel avatar
+export const removeChannelAvatar = async () => {
+  try {
+    const response = await axiosInstance.delete("/channels/me/avatar");
     return response.data;
   } catch (error) {
     throw error;

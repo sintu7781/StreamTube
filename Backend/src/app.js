@@ -45,6 +45,8 @@ import videoRoute from "./routes/video.routes.js";
 import commentRoute from "./routes/comment.routes.js";
 import likeRoute from "./routes/like.routes.js";
 import channelAnalyticsRoute from "./routes/channelAnalytics.routes.js";
+import watchHistoryRoute from "./routes/watchHistory.routes.js";
+import notificationRoute from "./routes/notification.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 app.use("/api/v1/auth", authRoute);
@@ -60,6 +62,10 @@ app.use("/api/v1/comments", commentRoute);
 app.use("/api/v1/likes", likeRoute);
 
 app.use("/api/v1/analytics", channelAnalyticsRoute);
+
+app.use("/api/v1/watch-history", watchHistoryRoute);
+
+app.use("/api/v1/notifications", notificationRoute);
 
 app.use(errorHandler);
 

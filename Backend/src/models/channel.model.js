@@ -73,6 +73,10 @@ const channelSchema = new mongoose.Schema(
       enum: ["public", "private", "unlisted"],
       default: "public",
     },
+    avatar: {
+      url: String,
+      key: String, // Cloudinary public_id for deletion
+    },
     deletedAt: {
       type: Date,
       select: false,
@@ -106,9 +110,10 @@ channelSchema.virtual("url").get(function () {
   return `/c/${this.handle}`;
 });
 
-channelSchema.virtual("avatar").get(function () {
-  return this.owner?.avatar || null;
-});
+// Remove the old virtual avatar since we now have a real field
+// channelSchema.virtual("avatar").get(function () {
+//   return this.owner?.avatar || null;
+// });
 
 channelSchema.pre("save", async function (next) {
   if (!this.isModified("handle") && this.isNew) {

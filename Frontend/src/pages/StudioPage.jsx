@@ -90,7 +90,7 @@ const StudioPage = () => {
             <img
               src={
                 channel.owner?.profile?.picture ||
-                "https://via.placeholder.com/64"
+                `https://ui-avatars.com/api/?name=${channel.owner.displayName}&background=random`
               }
               alt={channel.name}
               className="w-full h-full object-cover"

@@ -162,6 +162,16 @@ videoSchema.post("save", async function (doc) {
   await mongoose.model("Channel").findByIdAndUpdate(doc.channel, {
     $inc: { "stats.videos": 1 },
   });
+  
+  // Create notifications for subscribers on new video upload
+  if (doc.isNew && doc.visibility === "public") {
+    try {
+      const NotificationService = (await import("../services/notification.service.js")).default;
+      await NotificationService.createVideoUploadNotifications(doc._id);
+    } catch (error) {
+      console.error("Error creating video upload notifications:", error);
+    }
+  }
 });
 
 const Video = mongoose.model("Video", videoSchema);

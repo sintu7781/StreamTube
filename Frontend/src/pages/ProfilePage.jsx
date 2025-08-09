@@ -1,12 +1,123 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { FaUser, FaEnvelope, FaCalendar, FaEdit } from "react-icons/fa";
+import ProfilePictureUpload from "../components/common/ProfilePictureUpload";
+import { updateProfilePicture, removeProfilePicture } from "../api/settings";
+import { FaUser, FaEnvelope, FaCalendar, FaEdit, FaSave, FaTimes, FaCamera } from "react-icons/fa";
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [pictureLoading, setPictureLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [showPictureUpload, setShowPictureUpload] = useState(false);
+  
+  // Form data state
+  const [formData, setFormData] = useState({
+    displayName: '',
+    username: '',
+    bio: ''
+  });
+
+  // Initialize form data when user changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        displayName: user.profile?.name || user.fullName || user.displayName || '',
+        username: user.username || '',
+        bio: user.bio || ''
+      });
+    }
+  }, [user]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage('');
+
+    try {
+      // Here you would make an actual API call to update user profile
+      // For now, we'll simulate it
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Update the user context with new data
+      updateUser({
+        ...user,
+        profile: {
+          ...user.profile,
+          name: formData.displayName
+        },
+        username: formData.username,
+        bio: formData.bio,
+        displayName: formData.displayName
+      });
+
+      setMessage('Profile updated successfully!');
+      setIsEditing(false);
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Failed to update profile. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    // Reset form data to original values
+    setFormData({
+      displayName: user.profile?.name || user.fullName || user.displayName || '',
+      username: user.username || '',
+      bio: user.bio || ''
+    });
+    setIsEditing(false);
+    setMessage('');
+  };
+
+  const handleProfilePictureUpload = async (file) => {
+    setPictureLoading(true);
+    setMessage('');
+
+    try {
+      const response = await updateProfilePicture(file);
+      updateUser(response.data);
+      setMessage('Profile picture updated successfully!');
+      setShowPictureUpload(false);
+      
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Failed to update profile picture. Please try again.');
+    } finally {
+      setPictureLoading(false);
+    }
+  };
+
+  const handleProfilePictureRemove = async () => {
+    setPictureLoading(true);
+    setMessage('');
+
+    try {
+      const response = await removeProfilePicture();
+      updateUser(response.data);
+      setMessage('Profile picture removed successfully!');
+      setShowPictureUpload(false);
+      
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Failed to remove profile picture. Please try again.');
+    } finally {
+      setPictureLoading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -39,21 +150,65 @@ const ProfilePage = () => {
         </p>
       </div>
 
+      {/* Success/Error Message */}
+      {message && (
+        <div className={`mb-6 p-4 rounded-lg ${
+          message.includes('successfully') 
+            ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
+            : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+        }`}>
+          <div className="flex items-center">
+            {message.includes('successfully') ? (
+              <FaSave className="mr-2" />
+            ) : (
+              <FaTimes className="mr-2" />
+            )}
+            {message}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Card */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="text-center mb-6">
-              <div className="w-24 h-24 mx-auto rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 mb-4">
-                <img
-                  src={
-                    user.profile?.picture ||
-                    `https://ui-avatars.com/api/?name=${user.displayName}&background=random`
-                  }
-                  alt={user.displayName || user.fullName || user.username}
-                  className="w-full h-full object-cover"
-                />
+              <div className="relative w-24 h-24 mx-auto mb-4">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                  <img
+                    src={
+                      user.profile?.picture ||
+                      `https://ui-avatars.com/api/?name=${user.displayName}&background=random`
+                    }
+                    alt={user.displayName || user.fullName || user.username}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {isEditing && (
+                  <button
+                    onClick={() => setShowPictureUpload(!showPictureUpload)}
+                    className="absolute -bottom-1 -right-1 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors shadow-lg"
+                    title="Change profile picture"
+                  >
+                    <FaCamera className="text-sm" />
+                  </button>
+                )}
               </div>
+              
+              {/* Profile Picture Upload Modal */}
+              {showPictureUpload && isEditing && (
+                <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <ProfilePictureUpload
+                    currentImage={user.profile?.picture}
+                    onImageUpload={handleProfilePictureUpload}
+                    onImageRemove={handleProfilePictureRemove}
+                    isLoading={pictureLoading}
+                    size="medium"
+                    type="user"
+                  />
+                </div>
+              )}
+              
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 {user.displayName || user.fullName || user.username}
               </h2>
@@ -110,18 +265,19 @@ const ProfilePage = () => {
               Account Information
             </h3>
 
-            <div className="space-y-6">
+            <form onSubmit={handleProfileUpdate} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Display Name
                 </label>
                 <input
                   type="text"
-                  value={
-                    user.displayName || user.fullName || user.username || ""
-                  }
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
+                  placeholder="Enter your display name"
                 />
               </div>
 
@@ -131,9 +287,27 @@ const ProfilePage = () => {
                 </label>
                 <input
                   type="text"
-                  value={user.username || ""}
+                  name="username"
+                  value={formData.username}
+                  onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
+                  placeholder="Enter your username"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Bio
+                </label>
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
+                  placeholder="Tell us about yourself..."
                 />
               </div>
 
@@ -154,18 +328,34 @@ const ProfilePage = () => {
 
               {isEditing && (
                 <div className="flex space-x-4">
-                  <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
-                    Save Changes
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <FaSave className="mr-2" />
+                        Save Changes
+                      </>
+                    )}
                   </button>
                   <button
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
+                    <FaTimes className="mr-2" />
                     Cancel
                   </button>
                 </div>
               )}
-            </div>
+            </form>
           </div>
 
           {/* Channel Information */}

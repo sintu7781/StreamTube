@@ -153,6 +153,21 @@ likeSchema.statics.getUserVote = async function (userId, targetType, targetId) {
 
 likeSchema.post("save", async function (doc) {
   await updateTargetLikeCounters(doc);
+  
+  // Create notifications for likes (only for new likes, not for updates)
+  if (doc.isNew && doc.value === 1) {
+    try {
+      const NotificationService = (await import("../services/notification.service.js")).default;
+      
+      if (doc.targetType === "Video") {
+        await NotificationService.createVideoLikeNotification(doc.user, doc.target, true);
+      } else if (doc.targetType === "Comment") {
+        await NotificationService.createCommentLikeNotification(doc.user, doc.target, true);
+      }
+    } catch (error) {
+      console.error("Error creating like notification:", error);
+    }
+  }
 });
 
 likeSchema.post("deleteOne", { document: true }, async function (doc) {

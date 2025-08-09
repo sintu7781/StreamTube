@@ -24,6 +24,17 @@ subscriptionSchema.post("save", async function (doc) {
   await mongoose.model("Channel").findByIdAndUpdate(doc.channel, {
     $inc: { "stats.subscribers": 1 },
   });
+  
+  // Create notification for channel owner
+  try {
+    const NotificationService = (await import("../services/notification.service.js")).default;
+    await NotificationService.createChannelSubscriptionNotification(
+      doc.user,
+      doc.channel
+    );
+  } catch (error) {
+    console.error("Error creating subscription notification:", error);
+  }
 });
 
 subscriptionSchema.post("remove", async function (doc) {
