@@ -165,7 +165,7 @@ commentSchema.statics.findByVideo = function (
     .sort({ isPinned: -1, createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
-    .populate("user", "username avatar")
+    .populate("user", "username profile fullName")
     .lean();
 };
 

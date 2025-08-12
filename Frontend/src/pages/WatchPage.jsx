@@ -1,17 +1,16 @@
 // src/pages/WatchPage.jsx
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { getSingleVideo } from "../api/videos";
+import { getSingleVideo, getRelatedVideos } from "../api/videos";
 import VideoPlayer from "../components/video/VideoPlayer";
+import VideoActions from "../components/video/VideoActions";
+import CommentsSection from "../components/video/CommentsSection";
 import {
-  FaThumbsUp,
-  FaThumbsDown,
-  FaShare,
-  FaSave,
   FaBars,
 } from "react-icons/fa";
 import { formatViews, formatDate } from "../utils/format";
 import VideoCard from "../components/video/VideoCard";
+import RelatedVideos from "../components/video/RelatedVideos";
 import { useAuth } from "../context/AuthContext";
 import Spinner from "../components/common/Spinner";
 
@@ -21,6 +20,7 @@ const WatchPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [relatedVideos, setRelatedVideos] = useState([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { currentUser } = useAuth();
 
@@ -31,14 +31,6 @@ const WatchPage = () => {
         const videoData = await getSingleVideo(id);
         setVideo(videoData.data);
         console.log(videoData.data);
-
-        // Fetch related videos (in a real app, you'd have an API for this)
-        // For now, we'll use a mock
-        setRelatedVideos([
-          { ...videoData, _id: "1", title: "Related Video 1" },
-          { ...videoData, _id: "2", title: "Related Video 2" },
-          { ...videoData, _id: "3", title: "Related Video 3" },
-        ]);
       } catch (err) {
         setError(err.message || "Failed to load video");
       } finally {
@@ -46,7 +38,22 @@ const WatchPage = () => {
       }
     };
 
+    const fetchRelatedVideos = async () => {
+      try {
+        setRelatedLoading(true);
+        const relatedData = await getRelatedVideos(id, 12);
+        setRelatedVideos(relatedData.data);
+      } catch (err) {
+        console.error('Failed to load related videos:', err);
+        // Don't show error for related videos, just leave empty
+        setRelatedVideos([]);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+
     fetchVideo();
+    fetchRelatedVideos();
   }, [id]);
 
   if (loading) return <Spinner />;
@@ -81,14 +88,10 @@ const WatchPage = () => {
         }`}
       >
         <div className="p-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Related Videos
-          </h3>
-          <div className="space-y-4">
-            {relatedVideos.map((relatedVideo) => (
-              <VideoCard key={relatedVideo._id} video={relatedVideo} />
-            ))}
-          </div>
+          <RelatedVideos 
+            videos={relatedVideos}
+            loading={relatedLoading}
+          />
         </div>
       </div>
 
@@ -126,22 +129,10 @@ const WatchPage = () => {
                   </button>
                 </div>
 
-                <div className="flex space-x-2">
-                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    <FaThumbsUp className="mr-2" />
-                    <span>{formatViews(video.metadata.likes)}</span>
-                    <span className="mx-2">|</span>
-                    <FaThumbsDown />
-                  </button>
-                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    <FaShare className="mr-2" />
-                    <span>Share</span>
-                  </button>
-                  <button className="flex items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-                    <FaSave className="mr-2" />
-                    <span>Save</span>
-                  </button>
-                </div>
+                <VideoActions 
+                  video={video} 
+                  onVideoUpdate={setVideo}
+                />
               </div>
             </div>
 
@@ -157,20 +148,16 @@ const WatchPage = () => {
               </p>
             </div>
 
-            {/* Comments section would go here */}
+            {/* Comments Section */}
+            <CommentsSection videoId={video._id} />
           </div>
 
           {/* Related videos sidebar - Desktop only */}
-          <div className="hidden lg:block lg:w-1/3">
-            <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-              Related Videos
-            </h2>
-            <div className="space-y-4">
-              {relatedVideos.map((relatedVideo) => (
-                <VideoCard key={relatedVideo._id} video={relatedVideo} />
-              ))}
-            </div>
-          </div>
+          <RelatedVideos 
+            videos={relatedVideos}
+            loading={relatedLoading}
+            className="hidden lg:block lg:w-1/3"
+          />
         </div>
       </div>
     </div>

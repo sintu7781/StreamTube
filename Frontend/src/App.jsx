@@ -14,6 +14,9 @@ import SettingsPage from "./pages/SettingsPage";
 import HistoryPage from "./pages/HistoryPage";
 import LikedVideosPage from "./pages/LikedVideosPage";
 import LikedCommentsPage from "./pages/LikedCommentsPage";
+import WatchLaterPage from "./pages/WatchLaterPage";
+import CategoryPage from "./pages/CategoryPage";
+import PageNotFound from "./pages/PageNotFound";
 import ChannelAnalyticsPage from "./pages/ChannelAnalyticsPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import PrivateRoute from "./components/auth/PrivateRoute";
@@ -33,10 +36,10 @@ function App() {
   const location = useLocation();
 
   // Routes where sidebar should be hidden completely
-  const hideSidebarRoutes = ["/login", "/signup", "/watch"];
+  const hideSidebarRoutes = ["/login", "/signup"];
   const shouldHideSidebar = hideSidebarRoutes.some((route) =>
     location.pathname.startsWith(route)
-  );
+  ) || location.pathname.match(/^\/watch\/[^/]+$/); // Only hide for /watch/:id, not /watch-later
 
   // Routes where header should not be shown
   const hideHeaderRoutes = ["/login", "/signup"];
@@ -84,6 +87,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
                 <Route path="/search" element={<SearchPage />} />
+                <Route path="/category" element={<CategoryPage />} />
                 <Route path="/watch/:id" element={<WatchPage />} />
                 <Route path="/c/:handle" element={<ChannelPage />} />
                 <Route
@@ -151,6 +155,14 @@ function App() {
                   }
                 />
                 <Route
+                  path="/watch-later"
+                  element={
+                    <PrivateRoute>
+                      <WatchLaterPage />
+                    </PrivateRoute>
+                  }
+                />
+                <Route
                   path="/analytics"
                   element={
                     <PrivateRoute>
@@ -166,7 +178,8 @@ function App() {
                     </PrivateRoute>
                   }
                 />
-                {/* Add more routes as needed */}
+                {/* Catch-all route for 404 - must be last */}
+                <Route path="*" element={<PageNotFound />} />
               </Routes>
             </div>
           </main>

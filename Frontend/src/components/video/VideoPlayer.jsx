@@ -7,6 +7,7 @@ import {
   FaVolumeMute,
   FaExpand,
 } from "react-icons/fa";
+import { incrementViews } from '../../api/videos';
 
 const VideoPlayer = ({ video }) => {
   const [playing, setPlaying] = useState(false);
@@ -15,7 +16,11 @@ const VideoPlayer = ({ video }) => {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [viewReported, setViewReported] = useState(false);
+  const [lastReportedProgress, setLastReportedProgress] = useState(0);
   const videoRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const totalWatchTimeRef = useRef(0);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -35,8 +40,33 @@ const VideoPlayer = ({ video }) => {
   const updateProgress = () => {
     const current = videoRef.current.currentTime;
     const total = videoRef.current.duration;
+    const progressPercentage = (current / total) * 100;
+    
     setCurrentTime(current);
-    setProgress((current / total) * 100);
+    setProgress(progressPercentage);
+    
+    // Track view progress - report when user watches significant portions
+    if (!viewReported && progressPercentage >= 10) {
+      // Report initial view after 10% watched
+      reportViewProgress(current, progressPercentage);
+      setViewReported(true);
+    } else if (progressPercentage - lastReportedProgress >= 25) {
+      // Report progress every 25% watched
+      reportViewProgress(current, progressPercentage);
+      setLastReportedProgress(Math.floor(progressPercentage / 25) * 25);
+    }
+  };
+
+  // Report view progress to backend
+  const reportViewProgress = async (watchedDuration, watchedPercentage) => {
+    try {
+      await incrementViews(video._id, {
+        duration: Math.floor(watchedDuration),
+        watchedPercentage: Math.floor(watchedPercentage)
+      });
+    } catch (error) {
+      console.error('Error reporting view progress:', error);
+    }
   };
 
   const togglePlay = () => {

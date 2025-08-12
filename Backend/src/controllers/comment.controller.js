@@ -34,7 +34,7 @@ const createComment = asyncHandler(async (req, res) => {
     parentComment: parentComment || null,
   });
 
-  await comment.populate("user", "name profile");
+  await comment.populate("user", "username profile fullName");
 
   if (!comment) {
     throw new ApiError(500, "Comment not create");

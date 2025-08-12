@@ -6,9 +6,7 @@ import {
   FaUser,
   FaCog,
   FaHeart,
-  FaYoutube,
   FaVideo,
-  FaPlay,
   FaUsers,
   FaBookmark,
   FaFlag,
@@ -45,23 +43,17 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
   ];
 
   const categories = [
-    { name: "All", icon: null, path: "/?category=all" },
-    { name: "Music", icon: FaMusic, path: "/?category=music" },
-    { name: "Gaming", icon: FaGamepad, path: "/?category=gaming" },
-    { name: "Movies", icon: FaFilm, path: "/?category=movies" },
-    { name: "News", icon: FaNewspaper, path: "/?category=news" },
-    { name: "Education", icon: FaGraduationCap, path: "/?category=education" },
-    { name: "Technology", icon: FaLightbulb, path: "/?category=technology" },
-    { name: "Sports", icon: FaDumbbell, path: "/?category=sports" },
-    { name: "Entertainment", icon: FaUsers, path: "/?category=entertainment" },
+    { name: "All", icon: null, path: "/category?category=all" },
+    { name: "Music", icon: FaMusic, path: "/category?category=music" },
+    { name: "Gaming", icon: FaGamepad, path: "/category?category=gaming" },
+    { name: "Movies", icon: FaFilm, path: "/category?category=movies" },
+    { name: "News", icon: FaNewspaper, path: "/category?category=news" },
+    { name: "Education", icon: FaGraduationCap, path: "/category?category=education" },
+    { name: "Technology", icon: FaLightbulb, path: "/category?category=technology" },
+    { name: "Sports", icon: FaDumbbell, path: "/category?category=sports" },
+    { name: "Entertainment", icon: FaUsers, path: "/category?category=entertainment" },
   ];
 
-  const subscriptionItems = [
-    { icon: FaYoutube, label: "Music", handle: "music" },
-    { icon: FaVideo, label: "Gaming", handle: "gaming" },
-    { icon: FaPlay, label: "Sports", handle: "sports" },
-    { icon: FaUsers, label: "Education", handle: "education" },
-  ];
 
   const userItems = [
     {
@@ -188,11 +180,13 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
                   {categories.map((category) => {
                     const IconComponent = category.icon;
                     const isActiveCategory =
-                      location.search.includes(
-                        `category=${category.name.toLowerCase()}`
-                      ) ||
+                      (location.pathname === "/category" &&
+                        location.search.includes(
+                          `category=${category.name.toLowerCase()}`
+                        )) ||
                       (category.name === "All" &&
-                        !location.search.includes("category="));
+                        location.pathname === "/category" &&
+                        location.search.includes("category=all"));
                     return (
                       <Link
                         key={category.name}
@@ -213,23 +207,6 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
                 </div>
               </div>
 
-              <div className="mb-8">
-                <h3 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                  Subscriptions
-                </h3>
-                <div className="space-y-2">
-                  {subscriptionItems.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={`/c/${item.handle}`}
-                      className="flex items-center px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      <item.icon className="mr-3 h-5 w-5" />
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
 
               {user && (
                 <div className="mb-8">

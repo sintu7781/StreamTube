@@ -101,9 +101,17 @@ const getSingleVideo = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Video not found");
   }
 
-  // Increment views using the proper method
-  video.metadata.views += 1;
-  await video.save();
+  // Increment views with proper unique view tracking
+  const viewData = {
+    userId,
+    sessionId: req.sessionID || req.headers['x-session-id'],
+    ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+    userAgent: req.get('User-Agent'),
+    duration: 0,
+    watchedPercentage: 0
+  };
+  
+  await video.incrementViews(viewData);
 
   // Add to watch history if user is authenticated
   if (userId) {
@@ -346,6 +354,62 @@ const searchVideos = asyncHandler(async (req, res) => {
 });
 
 // Get related videos based on tags, channel, and popularity
+const getVideosByCategory = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+  const {
+    page = 1,
+    limit = 20,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = req.query;
+
+  const skip = (page - 1) * limit;
+  const sort = { [sortBy]: sortOrder === "desc" ? -1 : 1 };
+
+  // Build the query filter
+  let filter = { visibility: "public" };
+
+  // If category is not "all", filter by category in tags
+  if (category && category !== "all") {
+    // Create case-insensitive regex for category matching
+    const categoryRegex = new RegExp(category, "i");
+    filter.tags = { $in: [categoryRegex] };
+  }
+
+  const videos = await Video.find(filter)
+    .populate({
+      path: "channel",
+      select: "name handle stats",
+      populate: {
+        path: "owner",
+        select: "profile",
+      },
+    })
+    .sort(sort)
+    .skip(skip)
+    .limit(parseInt(limit));
+
+  const totalVideos = await Video.countDocuments(filter);
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        videos,
+        category,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(totalVideos / limit),
+          totalVideos,
+          hasNextPage: skip + videos.length < totalVideos,
+          hasPrevPage: page > 1,
+        },
+      },
+      `Videos in ${category} category fetched successfully`
+    )
+  );
+});
+
 const getRelatedVideos = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { limit = 12 } = req.query;
@@ -475,6 +539,32 @@ function getDeviceType(userAgent) {
   return "desktop";
 }
 
+const incrementViews = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?._id;
+  const { duration = 0, watchedPercentage = 0 } = req.body;
+
+  const video = await Video.findById(id);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+
+  const viewData = {
+    userId,
+    sessionId: req.sessionID || req.headers['x-session-id'],
+    ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+    userAgent: req.get('User-Agent'),
+    duration,
+    watchedPercentage
+  };
+  
+  const updatedViews = await video.incrementViews(viewData);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedViews, "Views updated successfully"));
+});
+
 export {
   uploadVideo,
   getSingleVideo,
@@ -482,5 +572,7 @@ export {
   updateVideo,
   getAllVideos,
   searchVideos,
+  getVideosByCategory,
   getRelatedVideos,
+  incrementViews,
 };

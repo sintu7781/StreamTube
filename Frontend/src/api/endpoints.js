@@ -71,3 +71,19 @@ export const NOTIFICATION_ENDPOINTS = {
   GET_NOTIFICATION_BY_ID: (notificationId) =>
     `${API_VERSION}/notifications/${notificationId}`,
 };
+
+export const WATCH_LATER_ENDPOINTS = {
+  GET_WATCH_LATER: `${API_VERSION}/watch-later`,
+  GET_WATCH_LATER_STATS: `${API_VERSION}/watch-later/stats`,
+  GET_WATCH_LATER_BATCH: `${API_VERSION}/watch-later/batch`,
+  CLEAR_WATCH_LATER: `${API_VERSION}/watch-later/clear`,
+  REORDER_WATCH_LATER: `${API_VERSION}/watch-later/reorder`,
+  ADD_TO_WATCH_LATER: (videoId) => `${API_VERSION}/watch-later/${videoId}`,
+  REMOVE_FROM_WATCH_LATER: (videoId) => `${API_VERSION}/watch-later/${videoId}`,
+  CHECK_WATCH_LATER_STATUS: (videoId) =>
+    `${API_VERSION}/watch-later/${videoId}/status`,
+  TOGGLE_WATCH_LATER: (videoId) =>
+    `${API_VERSION}/watch-later/${videoId}/toggle`,
+  UPDATE_WATCH_LATER_NOTES: (videoId) =>
+    `${API_VERSION}/watch-later/${videoId}/notes`,
+};

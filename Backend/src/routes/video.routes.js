@@ -7,7 +7,9 @@ import {
   updateVideo,
   uploadVideo,
   searchVideos,
+  getVideosByCategory,
   getRelatedVideos,
+  incrementViews,
 } from "../controllers/video.controller.js";
 
 const router = Router();
@@ -15,6 +17,7 @@ const router = Router();
 // Public routes
 router.route("/").get(getAllVideos);
 router.route("/search").get(searchVideos);
+router.route("/category/:category").get(getVideosByCategory);
 router.route("/:id").get(getSingleVideo);
 router.route("/:id/related").get(getRelatedVideos);
 
@@ -32,5 +35,6 @@ router.route("/upload").post(
 );
 
 router.route("/update-video/:id").post(upload.single("thumbnail"), updateVideo);
+router.route("/:id/views").post(incrementViews);
 
 export default router;

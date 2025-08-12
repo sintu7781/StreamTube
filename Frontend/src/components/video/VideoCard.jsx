@@ -2,9 +2,64 @@ import { Link } from "react-router-dom";
 import { formatViews, formatDuration, formatTimeAgo } from "../../utils/format";
 import { FaPlay } from "react-icons/fa";
 
-const VideoCard = ({ video }) => {
+const VideoCard = ({ video, layout = "vertical" }) => {
   if (!video) return null;
 
+  // Horizontal layout for sidebar
+  if (layout === "horizontal") {
+    return (
+      <div className="group cursor-pointer flex space-x-3">
+        {/* Video Thumbnail */}
+        <Link to={`/watch/${video._id}`} className="flex-shrink-0">
+          <div className="relative w-40 aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
+            <img
+              src={video.thumbnail?.url}
+              alt={video.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+
+            {/* Duration Badge */}
+            <div className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded font-medium">
+              {video.media?.duration
+                ? formatDuration(video.media.duration)
+                : "0:00"}
+            </div>
+
+            {/* Play Button Overlay */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <div className="w-8 h-8 bg-white/90 rounded-full flex items-center justify-center">
+                <FaPlay className="text-gray-800 ml-0.5 text-xs" />
+              </div>
+            </div>
+          </div>
+        </Link>
+
+        {/* Video Details */}
+        <div className="flex-1 min-w-0">
+          <Link to={`/watch/${video._id}`}>
+            <h3 className="font-medium text-gray-900 dark:text-white line-clamp-2 text-sm leading-tight mb-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+              {video.title}
+            </h3>
+          </Link>
+
+          <Link
+            to={`/c/${video.channel?.handle}`}
+            className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white block mb-1"
+          >
+            {video.channel?.name}
+          </Link>
+
+          <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
+            <span>{formatViews(video.metadata?.views || 0)}</span>
+            <span>•</span>
+            <span>{formatTimeAgo(video.createdAt)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Default vertical layout
   return (
     <div className="group cursor-pointer">
       {/* Video Thumbnail */}
