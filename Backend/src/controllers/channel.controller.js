@@ -98,7 +98,7 @@ const customizeChannel = asyncHandler(async (req, res) => {
     );
 });
 
-const getChannel = asyncHandler(async (req, res) => {
+const getUserChannel = asyncHandler(async (req, res) => {
   if (!req.user.channel) {
     throw new ApiError(404, "Channel not found");
   }
@@ -170,10 +170,10 @@ const searchChannels = asyncHandler(async (req, res) => {
     ],
   });
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
         channels,
         query,
         pagination: {
@@ -183,12 +183,11 @@ const searchChannels = asyncHandler(async (req, res) => {
           hasNextPage: skip + channels.length < totalChannels,
           hasPrevPage: page > 1,
         },
-      }, "Search results fetched successfully")
-    );
+      },
+      "Search results fetched successfully"
+    )
+  );
 });
-
-// Alias for getChannel for clarity
-const getUserChannel = getChannel;
 
 const deleteChannel = asyncHandler(async (req, res) => {
   if (!req.user.channel) {
@@ -204,7 +203,9 @@ const deleteChannel = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(req.user._id, { $unset: { channel: "" } });
   // Remove the channel document (soft delete if you want)
   await channel.remove();
-  return res.status(200).json(new ApiResponse(200, {}, "Channel deleted successfully"));
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Channel deleted successfully"));
 });
 
 // Upload/update channel avatar
@@ -254,7 +255,11 @@ const updateChannelAvatar = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, updatedChannel, "Channel avatar updated successfully")
+      new ApiResponse(
+        200,
+        updatedChannel,
+        "Channel avatar updated successfully"
+      )
     );
 });
 
@@ -287,18 +292,21 @@ const removeChannelAvatar = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, updatedChannel, "Channel avatar removed successfully")
+      new ApiResponse(
+        200,
+        updatedChannel,
+        "Channel avatar removed successfully"
+      )
     );
 });
 
-export { 
-  createChannel, 
-  customizeChannel, 
-  getChannel, 
-  getUserChannel, 
-  getChannelByHandle, 
-  searchChannels, 
+export {
+  createChannel,
+  customizeChannel,
+  getUserChannel,
+  getChannelByHandle,
+  searchChannels,
   deleteChannel,
   updateChannelAvatar,
-  removeChannelAvatar 
+  removeChannelAvatar,
 };

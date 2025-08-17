@@ -21,15 +21,15 @@ export const AuthProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
-  
+
   // Add a backup method to restore user from localStorage if token validation fails
   const restoreUserFromStorage = () => {
     const savedProfile = localStorage.getItem("userProfile");
     const savedChannel = localStorage.getItem("userChannel");
-    
+
     if (savedProfile || savedChannel) {
       let fallbackUser = {};
-      
+
       if (savedProfile) {
         try {
           fallbackUser.profile = JSON.parse(savedProfile);
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
           console.error("Failed to parse saved profile", error);
         }
       }
-      
+
       if (savedChannel) {
         try {
           fallbackUser.channel = JSON.parse(savedChannel);
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
           console.error("Failed to parse saved channel", error);
         }
       }
-      
+
       // Add a fallback email if we have any saved data
       if (Object.keys(fallbackUser).length > 0) {
         fallbackUser.email = fallbackUser.profile?.email || "user@example.com";
@@ -54,26 +54,26 @@ export const AuthProvider = ({ children }) => {
         return true;
       }
     }
-    
+
     return false;
   };
 
   const validateToken = async (token) => {
     try {
       const { exp, ...userData } = jwtDecode(token);
-      
+
       // Check if token is expired
       if (Date.now() >= exp * 1000) {
         console.log("Token expired, logging out");
         logout();
         return;
       }
-      
+
       // First, try to restore channel and profile data from localStorage
       const savedChannel = localStorage.getItem("userChannel");
       const savedProfile = localStorage.getItem("userProfile");
       let initialUserData = { ...userData };
-      
+
       if (savedChannel) {
         try {
           const channelData = JSON.parse(savedChannel);
@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem("userChannel");
         }
       }
-      
+
       if (savedProfile) {
         try {
           const profileData = JSON.parse(savedProfile);
@@ -93,24 +93,29 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem("userProfile");
         }
       }
-      
+
       console.log("Setting user data on token validation:", initialUserData);
       // Set user data immediately to prevent logout on refresh
       setUser(initialUserData);
       setIsLoading(false); // Set loading to false immediately after setting user
-      
+
       // Fetch complete user data including channel information in background
       // This is now completely optional and won't affect authentication state
       fetchChannelDataInBackground(initialUserData);
-      
     } catch (error) {
       console.error("Token validation failed:", error);
       // Only logout if it's specifically a JWT decode error (invalid token)
-      if (error.name === 'InvalidTokenError' || error.message.includes('invalid') || error.message.includes('malformed')) {
+      if (
+        error.name === "InvalidTokenError" ||
+        error.message.includes("invalid") ||
+        error.message.includes("malformed")
+      ) {
         console.log("Token is invalid, logging out");
         logout();
       } else {
-        console.log("Non-token error during validation, keeping user logged in");
+        console.log(
+          "Non-token error during validation, keeping user logged in"
+        );
         // Even if we can't decode the token due to other errors, keep user logged in if token exists
         // This prevents logout due to temporary issues
         setUser({ email: "user@example.com" }); // Fallback user data
@@ -118,17 +123,21 @@ export const AuthProvider = ({ children }) => {
       }
     }
   };
-  
+
   // Separate function for background channel data fetching
   const fetchChannelDataInBackground = async (userData) => {
     try {
       const channelResponse = await getUserChannel();
-      if (channelResponse?.data?.data?.channel || channelResponse?.data?.channel) {
-        const channel = channelResponse.data?.data?.channel || channelResponse.data?.channel;
+      if (
+        channelResponse?.data?.data?.channel ||
+        channelResponse?.data?.channel
+      ) {
+        const channel =
+          channelResponse.data?.data?.channel || channelResponse.data?.channel;
         // Update user with fresh channel data
-        const updatedUser = { 
-          ...userData, 
-          channel
+        const updatedUser = {
+          ...userData,
+          channel,
         };
         console.log("Updated user with fresh channel data:", updatedUser);
         setUser(updatedUser);
@@ -144,9 +153,9 @@ export const AuthProvider = ({ children }) => {
   const login = (token, userData) => {
     console.log("Login called with:", { token, userData });
     localStorage.setItem("authToken", token);
-    
+
     // Ensure we preserve the full user object structure
-    if (userData && typeof userData === 'object') {
+    if (userData && typeof userData === "object") {
       setUser(userData);
       // Store channel data if available
       if (userData.channel) {
@@ -159,27 +168,33 @@ export const AuthProvider = ({ children }) => {
     } else {
       console.error("Invalid user data received:", userData);
     }
-    
+
     return userData;
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(prevUser => {
+    setUser((prevUser) => {
       const newUser = {
         ...prevUser,
-        ...updatedUserData
+        ...updatedUserData,
       };
-      
+
       // If channel data is being updated, save it to localStorage
       if (updatedUserData.channel) {
-        localStorage.setItem("userChannel", JSON.stringify(updatedUserData.channel));
+        localStorage.setItem(
+          "userChannel",
+          JSON.stringify(updatedUserData.channel)
+        );
       }
-      
+
       // If profile data is being updated, save it to localStorage
       if (updatedUserData.profile) {
-        localStorage.setItem("userProfile", JSON.stringify(updatedUserData.profile));
+        localStorage.setItem(
+          "userProfile",
+          JSON.stringify(updatedUserData.profile)
+        );
       }
-      
+
       return newUser;
     });
   };

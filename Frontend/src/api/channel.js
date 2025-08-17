@@ -1,7 +1,7 @@
 import axiosInstance from "../lib/axios";
 
 export const getUserChannel = async () => {
-  const response = await axiosInstance.get("/v1/channels/me");
+  const response = await axiosInstance.get("/v1/channels/");
   return response.data;
 };
 

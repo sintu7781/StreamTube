@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
+import "./view.model.js";
 
 const videoSchema = new mongoose.Schema(
   {
@@ -42,17 +43,6 @@ const videoSchema = new mongoose.Schema(
     metadata: {
       views: { type: Number, default: 0, min: 0 },
       uniqueViews: { type: Number, default: 0, min: 0 },
-      viewSessions: [
-        {
-          userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-          sessionId: String,
-          ipAddress: String,
-          userAgent: String,
-          timestamp: { type: Date, default: Date.now },
-          duration: Number,
-          watchedPercentage: Number,
-        },
-      ],
       likes: { type: Number, default: 0, min: 0 },
       dislikes: { type: Number, default: 0, min: 0 },
       comments: { type: Number, default: 0, min: 0 },
@@ -89,24 +79,17 @@ videoSchema.methods.incrementViews = async function ({
   duration = 0,
   watchedPercentage = 0,
 }) {
-  // console.log(userId, sessionId);
-  const ViewSession = this.metadata.viewSessions;
-  const sessionThreshold = 30 * 60 * 1000; // 30 minutes
+  const View = mongoose.model("View");
 
-  // Check for existing session
-  const existingSession = ViewSession.find(
-    (session) =>
-      (userId && session.userId?.equals(userId)) ||
-      (sessionId && session.sessionId === sessionId)
-  );
-  console.log(existingSession);
+  const existing = await View.findOne({
+    video: this._id,
+    $or: [userId, sessionId].filter(Boolean),
+  });
 
-  if (!existingSession) {
+  if (!existing) {
     // New unique view
-    this.metadata.uniqueViews += 1;
-
-    // Add new view session
-    ViewSession.push({
+    await View.create({
+      video: this._id,
       userId,
       sessionId,
       ipAddress,
@@ -114,14 +97,15 @@ videoSchema.methods.incrementViews = async function ({
       duration,
       watchedPercentage,
     });
+    this.metadata.uniqueViews += 1;
   } else {
-    // Update existing session
-    existingSession.duration += duration;
-    existingSession.watchedPercentage = Math.max(
-      existingSession.watchedPercentage,
+    existing.duration += duration;
+    existing.watchedPercentage = Math.max(
+      existing.watchedPercentage,
       watchedPercentage
     );
-    existingSession.timestamp = new Date();
+    existing.timestamp = new Date();
+    await existing.save();
   }
 
   // Always increment total views
@@ -130,7 +114,7 @@ videoSchema.methods.incrementViews = async function ({
   await this.save();
 
   // Update channel stats in background
-  this.updateChannelStats();
+  this.updateChannelStats(!existing);
 
   return {
     views: this.metadata.views,
@@ -139,21 +123,20 @@ videoSchema.methods.incrementViews = async function ({
 };
 
 // Background channel stats update
-videoSchema.methods.updateChannelStats = async function () {
+videoSchema.methods.updateChannelStats = async function (isUnique) {
   try {
     await mongoose.model("Channel").findByIdAndUpdate(
       this.channel,
       {
         $inc: {
           "stats.views": 1,
-          "stats.uniqueViews": this.metadata.viewSessions.length,
+          ...(isUnique ? { "stats.uniqueViews": 1 } : {}),
         },
       },
       { new: true }
     );
   } catch (err) {
     console.error("Channel stats update error:", err);
-    // Implement your error reporting here
   }
 };
 
