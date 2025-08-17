@@ -5,9 +5,7 @@ import { getSingleVideo, getRelatedVideos } from "../api/videos";
 import VideoPlayer from "../components/video/VideoPlayer";
 import VideoActions from "../components/video/VideoActions";
 import CommentsSection from "../components/video/CommentsSection";
-import {
-  FaBars,
-} from "react-icons/fa";
+import { FaBars } from "react-icons/fa";
 import { formatViews, formatDate } from "../utils/format";
 import VideoCard from "../components/video/VideoCard";
 import RelatedVideos from "../components/video/RelatedVideos";
@@ -30,7 +28,6 @@ const WatchPage = () => {
         setLoading(true);
         const videoData = await getSingleVideo(id);
         setVideo(videoData.data);
-        console.log(videoData.data);
       } catch (err) {
         setError(err.message || "Failed to load video");
       } finally {
@@ -44,7 +41,7 @@ const WatchPage = () => {
         const relatedData = await getRelatedVideos(id, 12);
         setRelatedVideos(relatedData.data);
       } catch (err) {
-        console.error('Failed to load related videos:', err);
+        console.error("Failed to load related videos:", err);
         // Don't show error for related videos, just leave empty
         setRelatedVideos([]);
       } finally {
@@ -88,10 +85,7 @@ const WatchPage = () => {
         }`}
       >
         <div className="p-4">
-          <RelatedVideos 
-            videos={relatedVideos}
-            loading={relatedLoading}
-          />
+          <RelatedVideos videos={relatedVideos} loading={relatedLoading} />
         </div>
       </div>
 
@@ -100,7 +94,6 @@ const WatchPage = () => {
           {/* Main video content */}
           <div className="lg:w-2/3">
             <VideoPlayer video={video} />
-
             <div className="mt-4">
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 {video.title}
@@ -121,7 +114,7 @@ const WatchPage = () => {
                       {video.channel.handle}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {formatViews(video.channel.stats.subscribers)} subscribers
+                      {video.channel.stats.subscribers} subscribers
                     </p>
                   </div>
                   <button className="ml-4 px-4 py-1.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">
@@ -129,17 +122,14 @@ const WatchPage = () => {
                   </button>
                 </div>
 
-                <VideoActions 
-                  video={video} 
-                  onVideoUpdate={setVideo}
-                />
+                <VideoActions video={video} onVideoUpdate={setVideo} />
               </div>
             </div>
 
             <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center mb-2">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {formatViews(video.metadata.views)} views •{" "}
+                  {formatViews(video.metadata.uniqueViews)} •{" "}
                   {formatDate(video.createdAt)}
                 </p>
               </div>
@@ -153,7 +143,7 @@ const WatchPage = () => {
           </div>
 
           {/* Related videos sidebar - Desktop only */}
-          <RelatedVideos 
+          <RelatedVideos
             videos={relatedVideos}
             loading={relatedLoading}
             className="hidden lg:block lg:w-1/3"

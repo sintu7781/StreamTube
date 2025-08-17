@@ -1,7 +1,5 @@
-// src/components/video/RelatedVideos.jsx
-import React from 'react';
-import VideoCard from './VideoCard';
-import Spinner from '../common/Spinner';
+import VideoCard from "./VideoCard";
+import Spinner from "../common/Spinner";
 
 const RelatedVideos = ({ videos, loading, className = "" }) => {
   if (loading) {
@@ -37,8 +35,8 @@ const RelatedVideos = ({ videos, loading, className = "" }) => {
       </h2>
       <div className="space-y-4">
         {videos.map((video) => (
-          <VideoCard 
-            key={video._id} 
+          <VideoCard
+            key={video._id}
             video={video}
             layout="horizontal" // For sidebar layout
           />

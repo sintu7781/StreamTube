@@ -75,7 +75,7 @@ videoSchema.plugin(mongooseAggregatePaginate);
 
 // Indexes
 videoSchema.index({ title: "text", description: "text", tags: "text" });
-videoSchema.index({ "metrics.views": -1 });
+videoSchema.index({ "metadata.views": -1 });
 videoSchema.index({ channel: 1, createdAt: -1 });
 videoSchema.index({ "metadata.viewSessions.userId": 1 });
 videoSchema.index({ "metadata.viewSessions.sessionId": 1 });
@@ -89,6 +89,7 @@ videoSchema.methods.incrementViews = async function ({
   duration = 0,
   watchedPercentage = 0,
 }) {
+  // console.log(userId, sessionId);
   const ViewSession = this.metadata.viewSessions;
   const sessionThreshold = 30 * 60 * 1000; // 30 minutes
 
@@ -96,9 +97,9 @@ videoSchema.methods.incrementViews = async function ({
   const existingSession = ViewSession.find(
     (session) =>
       (userId && session.userId?.equals(userId)) ||
-      (sessionId && session.sessionId === sessionId) ||
-      (ipAddress && session.ipAddress === ipAddress)
+      (sessionId && session.sessionId === sessionId)
   );
+  console.log(existingSession);
 
   if (!existingSession) {
     // New unique view
@@ -158,15 +159,12 @@ videoSchema.methods.updateChannelStats = async function () {
 
 // Hooks
 videoSchema.post("save", async function (doc) {
-  // Update channel's video count
-  await mongoose.model("Channel").findByIdAndUpdate(doc.channel, {
-    $inc: { "stats.videos": 1 },
-  });
-  
   // Create notifications for subscribers on new video upload
   if (doc.isNew && doc.visibility === "public") {
     try {
-      const NotificationService = (await import("../services/notification.service.js")).default;
+      const NotificationService = (
+        await import("../services/notification.service.js")
+      ).default;
       await NotificationService.createVideoUploadNotifications(doc._id);
     } catch (error) {
       console.error("Error creating video upload notifications:", error);

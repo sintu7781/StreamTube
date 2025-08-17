@@ -1,5 +1,3 @@
-// src/components/layout/Footer.jsx
-import React from "react";
 import { AiFillYoutube } from "react-icons/ai";
 import { FaTwitter, FaFacebook, FaInstagram, FaGithub } from "react-icons/fa";
 

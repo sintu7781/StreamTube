@@ -37,9 +37,9 @@ function App() {
 
   // Routes where sidebar should be hidden completely
   const hideSidebarRoutes = ["/login", "/signup"];
-  const shouldHideSidebar = hideSidebarRoutes.some((route) =>
-    location.pathname.startsWith(route)
-  ) || location.pathname.match(/^\/watch\/[^/]+$/); // Only hide for /watch/:id, not /watch-later
+  const shouldHideSidebar =
+    hideSidebarRoutes.some((route) => location.pathname.startsWith(route)) ||
+    location.pathname.match(/^\/watch\/[^/]+$/); // Only hide for /watch/:id, not /watch-later
 
   // Routes where header should not be shown
   const hideHeaderRoutes = ["/login", "/signup"];
@@ -184,7 +184,7 @@ function App() {
             </div>
           </main>
         </div>
-        {shouldShowFooter && <Footer />}
+        {/* {shouldShowFooter && <Footer />} */}
       </div>
     </AuthErrorBoundary>
   );

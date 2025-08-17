@@ -79,6 +79,10 @@ const uploadVideo = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Video uploading failed");
   }
 
+  await Channel.findByIdAndUpdate(req.user.channel, {
+    $inc: { "stats.videos": 1 },
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, video, "Video uploaded successfully"));
@@ -104,13 +108,14 @@ const getSingleVideo = asyncHandler(async (req, res) => {
   // Increment views with proper unique view tracking
   const viewData = {
     userId,
-    sessionId: req.sessionID || req.headers['x-session-id'],
-    ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
-    userAgent: req.get('User-Agent'),
+    sessionId: req.sessionID || req.headers["x-session-id"],
+    ipAddress:
+      req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+    userAgent: req.get("User-Agent"),
     duration: 0,
-    watchedPercentage: 0
+    watchedPercentage: 0,
   };
-  
+
   await video.incrementViews(viewData);
 
   // Add to watch history if user is authenticated
@@ -121,7 +126,7 @@ const getSingleVideo = asyncHandler(async (req, res) => {
         ipAddress: req.ip || req.connection.remoteAddress,
         deviceType: getDeviceType(req.get("User-Agent")),
       };
-      
+
       await WatchHistory.addOrUpdateWatchHistory(userId, id, {
         watchDuration: 0,
         watchPercentage: 0,
@@ -141,7 +146,8 @@ const getSingleVideo = asyncHandler(async (req, res) => {
 
 const getChannelVideos = asyncHandler(async (req, res) => {
   const { handle } = req.params;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, visibility = "public" } = req.query;
+  const currentUserId = req.user?._id;
 
   const channel = await Channel.findOne({ handle }).populate("owner");
 
@@ -149,11 +155,31 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Channel not found");
   }
 
+  // Check if current user is the channel owner
+  const isChannelOwner =
+    currentUserId && channel.owner._id.equals(currentUserId);
+
+  // Build visibility filter
+  let visibilityFilter;
+  if (visibility === "all" && isChannelOwner) {
+    // Channel owner can see all videos
+    visibilityFilter = {};
+  } else if (visibility === "private" && isChannelOwner) {
+    // Channel owner can see private videos
+    visibilityFilter = { visibility: "private" };
+  } else if (visibility === "unlisted" && isChannelOwner) {
+    // Channel owner can see unlisted videos
+    visibilityFilter = { visibility: "unlisted" };
+  } else {
+    // Public videos for everyone
+    visibilityFilter = { visibility: "public" };
+  }
+
   const skip = (page - 1) * limit;
 
   const videos = await Video.find({
     channel: channel._id,
-    visibility: "public",
+    ...visibilityFilter,
   })
     .populate({
       path: "channel",
@@ -165,7 +191,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
 
   const totalVideos = await Video.countDocuments({
     channel: channel._id,
-    visibility: "public",
+    ...visibilityFilter,
   });
 
   return res.status(200).json(
@@ -174,6 +200,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
       {
         videos,
         channel,
+        isChannelOwner,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(totalVideos / limit),
@@ -495,8 +522,8 @@ const getRelatedVideos = asyncHandler(async (req, res) => {
   // If we don't have enough related videos, fetch popular videos
   if (relatedVideos.length < parseInt(limit)) {
     const remainingLimit = parseInt(limit) - relatedVideos.length;
-    const relatedVideoIds = relatedVideos.map(v => v._id);
-    
+    const relatedVideoIds = relatedVideos.map((v) => v._id);
+
     const popularVideos = await Video.find({
       _id: { $nin: [...relatedVideoIds, currentVideo._id] },
       visibility: "public",
@@ -525,39 +552,46 @@ const getRelatedVideos = asyncHandler(async (req, res) => {
 // Helper function to determine device type
 function getDeviceType(userAgent) {
   if (!userAgent) return "desktop";
-  
+
   const ua = userAgent.toLowerCase();
-  
-  if (ua.includes("mobile") || ua.includes("android") || ua.includes("iphone")) {
+
+  if (
+    ua.includes("mobile") ||
+    ua.includes("android") ||
+    ua.includes("iphone")
+  ) {
     return "mobile";
   } else if (ua.includes("tablet") || ua.includes("ipad")) {
     return "tablet";
   } else if (ua.includes("smart-tv") || ua.includes("smarttv")) {
     return "tv";
   }
-  
+
   return "desktop";
 }
 
-const incrementViews = asyncHandler(async (req, res) => {
+const incrementView = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user?._id;
   const { duration = 0, watchedPercentage = 0 } = req.body;
+  // console.log(req.headers["x-session-id"]);
 
   const video = await Video.findById(id);
   if (!video) {
     throw new ApiError(404, "Video not found");
   }
-
   const viewData = {
     userId,
-    sessionId: req.sessionID || req.headers['x-session-id'],
-    ipAddress: req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
-    userAgent: req.get('User-Agent'),
+    sessionId: req.sessionID || req.headers["x-session-id"],
+    ipAddress:
+      req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+    userAgent: req.get("User-Agent"),
     duration,
-    watchedPercentage
+    watchedPercentage,
   };
-  
+
+  // console.log(viewData);
+
   const updatedViews = await video.incrementViews(viewData);
 
   return res
@@ -574,5 +608,5 @@ export {
   searchVideos,
   getVideosByCategory,
   getRelatedVideos,
-  incrementViews,
+  incrementView,
 };

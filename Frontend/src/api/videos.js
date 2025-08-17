@@ -1,17 +1,20 @@
 import axiosInstance from "../lib/axios";
+import { getSessionId } from "../utils/session";
 import { VIDEO_ENDPOINTS } from "./endpoints";
 
 export const getAllVideos = async (params = {}) => {
   const queryParams = new URLSearchParams();
-  
-  if (params.page) queryParams.append('page', params.page);
-  if (params.limit) queryParams.append('limit', params.limit);
-  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
-  if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
-  
+
+  if (params.page) queryParams.append("page", params.page);
+  if (params.limit) queryParams.append("limit", params.limit);
+  if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
   const queryString = queryParams.toString();
-  const url = queryString ? `${VIDEO_ENDPOINTS.GET_ALL_VIDEOS}?${queryString}` : VIDEO_ENDPOINTS.GET_ALL_VIDEOS;
-  
+  const url = queryString
+    ? `${VIDEO_ENDPOINTS.GET_ALL_VIDEOS}?${queryString}`
+    : VIDEO_ENDPOINTS.GET_ALL_VIDEOS;
+
   const response = await axiosInstance.get(url);
   return response.data;
 };
@@ -20,7 +23,6 @@ export const getSingleVideo = async (id) => {
   const response = await axiosInstance.get(
     VIDEO_ENDPOINTS.GET_SINGLE_VIDEO(id)
   );
-  console.log(response);
   return response.data;
 };
 
@@ -40,13 +42,13 @@ export const uploadVideo = async (formData) => {
 // Search functionality
 export const searchVideos = async (query, params = {}) => {
   const queryParams = new URLSearchParams();
-  
-  queryParams.append('q', query);
-  if (params.page) queryParams.append('page', params.page);
-  if (params.limit) queryParams.append('limit', params.limit);
-  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
-  if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
-  
+
+  queryParams.append("q", query);
+  if (params.page) queryParams.append("page", params.page);
+  if (params.limit) queryParams.append("limit", params.limit);
+  if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
   const response = await axiosInstance.get(
     `/v1/videos/search?${queryParams.toString()}`
   );
@@ -60,9 +62,14 @@ export const searchChannels = async (query) => {
   return response.data;
 };
 
-export const getChannelVideos = async (handle, page = 1, limit = 10) => {
+export const getChannelVideos = async (
+  handle,
+  page = 1,
+  limit = 10,
+  visibility = "public"
+) => {
   const response = await axiosInstance.get(
-    `/v1/channels/${handle}/videos?page=${page}&limit=${limit}`
+    `/v1/channels/${handle}/videos?page=${page}&limit=${limit}&visibility=${visibility}`
   );
   return response.data;
 };
@@ -78,17 +85,17 @@ export const getRelatedVideos = async (videoId, limit = 12) => {
 // Get videos by category
 export const getVideosByCategory = async (category, params = {}) => {
   const queryParams = new URLSearchParams();
-  
-  if (params.page) queryParams.append('page', params.page);
-  if (params.limit) queryParams.append('limit', params.limit);
-  if (params.sortBy) queryParams.append('sortBy', params.sortBy);
-  if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
-  
+
+  if (params.page) queryParams.append("page", params.page);
+  if (params.limit) queryParams.append("limit", params.limit);
+  if (params.sortBy) queryParams.append("sortBy", params.sortBy);
+  if (params.sortOrder) queryParams.append("sortOrder", params.sortOrder);
+
   const queryString = queryParams.toString();
-  const url = queryString 
-    ? `/v1/videos/category/${category}?${queryString}` 
+  const url = queryString
+    ? `/v1/videos/category/${category}?${queryString}`
     : `/v1/videos/category/${category}`;
-  
+
   const response = await axiosInstance.get(url);
   return response.data;
 };
@@ -97,7 +104,13 @@ export const getVideosByCategory = async (category, params = {}) => {
 export const incrementViews = async (videoId, viewData = {}) => {
   const response = await axiosInstance.post(
     `/v1/videos/${videoId}/views`,
-    viewData
+    viewData,
+    {
+      headers: {
+        "x-session-id": getSessionId(),
+      },
+    }
   );
+  console.log(response);
   return response.data;
 };

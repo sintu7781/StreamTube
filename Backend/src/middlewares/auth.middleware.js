@@ -40,3 +40,38 @@ export const checkEmailVerified = asyncHandler(async (req, res, next) => {
   }
   next();
 });
+
+// Optional authentication - doesn't throw error if no token is provided
+export const optionalAuth = asyncHandler(async (req, _, next) => {
+  try {
+    const token =
+      req.cookies?.accessToken ||
+      req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      // No token provided, continue without user
+      req.user = null;
+      return next();
+    }
+
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    const user = await User.findById(decodedToken._id).select(
+      "-password -refreshToken -__v"
+    );
+
+    if (!user) {
+      // Invalid token, continue without user
+      req.user = null;
+      return next();
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error(`Optional auth error: ${error}`);
+    // On any error, just continue without user
+    req.user = null;
+    next();
+  }
+});

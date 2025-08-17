@@ -50,7 +50,7 @@ const VideoCard = ({ video, layout = "vertical" }) => {
           </Link>
 
           <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400">
-            <span>{formatViews(video.metadata?.views || 0)}</span>
+            <span>{formatViews(video.metadata?.uniqueViews || 0)}</span>
             <span>•</span>
             <span>{formatTimeAgo(video.createdAt)}</span>
           </div>
@@ -117,7 +117,7 @@ const VideoCard = ({ video, layout = "vertical" }) => {
           </Link>
 
           <div className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
-            <span>{formatViews(video.metadata?.views || 0)}</span>
+            <span>{formatViews(video.metadata?.uniqueViews || 0)}</span>
             <span>•</span>
             <span>{formatTimeAgo(video.createdAt)}</span>
           </div>

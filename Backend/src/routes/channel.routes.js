@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, optionalAuth } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import {
   createChannel,
@@ -18,19 +18,17 @@ const router = Router();
 
 // Public routes
 router.route("/search").get(searchChannels);
+router.route("/:handle").get(getChannelByHandle);
+// This route uses optional authentication to determine if user is channel owner
+router.route("/:handle/videos").get(optionalAuth, getChannelVideos);
 
 // Protected routes
-router.use(verifyJWT);
-router.route("/me").get(getUserChannel).patch(upload.single("avatar"), customizeChannel).delete(deleteChannel);
-router.route("/").post(createChannel);
+router.route("/me").get(verifyJWT, getUserChannel).patch(verifyJWT, upload.single("avatar"), customizeChannel).delete(verifyJWT, deleteChannel);
+router.route("/").post(verifyJWT, createChannel);
 
 router
   .route("/me/avatar")
-  .patch(upload.single("channelAvatar"), updateChannelAvatar)
-  .delete(removeChannelAvatar);
-
-// Public routes (must come after /me to avoid conflict)
-router.route("/:handle").get(getChannelByHandle);
-router.route("/:handle/videos").get(getChannelVideos);
+  .patch(verifyJWT, upload.single("channelAvatar"), updateChannelAvatar)
+  .delete(verifyJWT, removeChannelAvatar);
 
 export default router;
