@@ -1,5 +1,4 @@
-// src/pages/WatchPage.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { getSingleVideo, getRelatedVideos } from "../api/videos";
 import VideoPlayer from "../components/video/VideoPlayer";
@@ -7,10 +6,9 @@ import VideoActions from "../components/video/VideoActions";
 import CommentsSection from "../components/video/CommentsSection";
 import { FaBars } from "react-icons/fa";
 import { formatViews, formatDate } from "../utils/format";
-import VideoCard from "../components/video/VideoCard";
 import RelatedVideos from "../components/video/RelatedVideos";
-import { useAuth } from "../context/AuthContext";
 import Spinner from "../components/common/Spinner";
+import SubscribeButton from "../components/channel/SubscribeButton";
 
 const WatchPage = () => {
   const { id } = useParams();
@@ -20,7 +18,6 @@ const WatchPage = () => {
   const [relatedVideos, setRelatedVideos] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { currentUser } = useAuth();
 
   useEffect(() => {
     const fetchVideo = async () => {
@@ -117,9 +114,7 @@ const WatchPage = () => {
                       {video.channel.stats.subscribers} subscribers
                     </p>
                   </div>
-                  <button className="ml-4 px-4 py-1.5 bg-red-600 text-white rounded-full text-sm font-medium hover:bg-red-700 transition-colors">
-                    Subscribe
-                  </button>
+                  <SubscribeButton channelId={video.channel._id} />
                 </div>
 
                 <VideoActions video={video} onVideoUpdate={setVideo} />

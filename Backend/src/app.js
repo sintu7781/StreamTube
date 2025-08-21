@@ -6,7 +6,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173", "http://127.0.0.1:5174"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+    ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
@@ -16,10 +21,19 @@ app.use(
 app.use((req, res, next) => {
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
   res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "http://localhost:5173");
+  res.setHeader(
+    "Access-Control-Allow-Origin",
+    req.headers.origin || "http://localhost:5173"
+  );
   res.setHeader("Access-Control-Allow-Credentials", "true");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
+  );
   next();
 });
 
@@ -34,13 +48,14 @@ app.get("/health", (req, res) => {
     status: "healthy",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV || "development"
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
 import authRoute from "./routes/auth.routes.js";
 import userRoute from "./routes/user.routes.js";
 import channelRoute from "./routes/channel.routes.js";
+import subscriptionRoute from "./routes/subscription.routes.js";
 import videoRoute from "./routes/video.routes.js";
 import commentRoute from "./routes/comment.routes.js";
 import likeRoute from "./routes/like.routes.js";
@@ -55,6 +70,8 @@ app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/users", userRoute);
 
 app.use("/api/v1/channels", channelRoute);
+
+app.use("/api/v1/subscriptions", subscriptionRoute);
 
 app.use("/api/v1/videos", videoRoute);
 

@@ -16,13 +16,18 @@ const router = Router();
 
 // Public routes
 router.route("/").get(getAllVideos);
+
 router.route("/search").get(searchVideos);
+
 router.route("/category/:category").get(getVideosByCategory);
+
 router.route("/:id").get(getSingleVideo);
+
 router.route("/:id/related").get(getRelatedVideos);
 
 // Protected routes
 router.use(verifyJWT);
+
 router.route("/upload").post(
   upload.fields([
     { name: "video", maxCount: 1 },
@@ -35,6 +40,7 @@ router.route("/upload").post(
 );
 
 router.route("/update-video/:id").post(upload.single("thumbnail"), updateVideo);
+
 router.route("/:id/views").post(incrementView);
 
 export default router;

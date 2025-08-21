@@ -1,5 +1,5 @@
 // src/pages/ChannelPage.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getChannelByHandle } from "../api/channel";
 import { getChannelVideos } from "../api/videos";
@@ -27,15 +27,21 @@ const ChannelPage = () => {
         const channelData = await getChannelByHandle(handle);
         const channel = channelData.data;
         setChannel(channel);
-        
+
         // Check if current user is the channel owner
-        const isOwner = user && user.channel && user.channel._id === channel._id;
+        const isOwner =
+          user && user.channel && user.channel._id === channel._id;
         setIsChannelOwner(isOwner);
-        
+
         // Fetch public videos for everyone
-        const publicVideosData = await getChannelVideos(handle, 1, 50, "public");
+        const publicVideosData = await getChannelVideos(
+          handle,
+          1,
+          50,
+          "public"
+        );
         setPublicVideos(publicVideosData.data.videos || []);
-        
+
         // If user is channel owner, also fetch private and unlisted videos
         if (isOwner) {
           const [privateVideosData, unlistedVideosData] = await Promise.all([
@@ -45,7 +51,6 @@ const ChannelPage = () => {
           setPrivateVideos(privateVideosData.data.videos || []);
           setUnlistedVideos(unlistedVideosData.data.videos || []);
         }
-        
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load channel");
       } finally {
@@ -61,7 +66,7 @@ const ChannelPage = () => {
   const renderVideoContent = () => {
     let currentVideos = [];
     let sectionTitle = "Videos";
-    
+
     if (isChannelOwner) {
       switch (activeTab) {
         case "private":

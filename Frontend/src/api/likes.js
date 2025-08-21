@@ -4,7 +4,9 @@ import { LIKE_ENDPOINTS } from "./endpoints";
 // Get user's liked videos
 export const getLikedVideos = async (params = {}) => {
   try {
-    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKED_VIDEOS, { params });
+    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKED_VIDEOS, {
+      params,
+    });
     return response.data;
   } catch (error) {
     throw error;
@@ -14,7 +16,10 @@ export const getLikedVideos = async (params = {}) => {
 // Get user's liked comments
 export const getLikedComments = async (params = {}) => {
   try {
-    const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKED_COMMENTS, { params });
+    const response = await axiosInstance.get(
+      LIKE_ENDPOINTS.GET_LIKED_COMMENTS,
+      { params }
+    );
     return response.data;
   } catch (error) {
     throw error;
@@ -27,7 +32,7 @@ export const toggleVideoLike = async (videoId, value = 1) => {
     const response = await axiosInstance.post(LIKE_ENDPOINTS.TOGGLE_LIKE, {
       targetType: "Video",
       targetId: videoId,
-      value
+      value,
     });
     return response.data;
   } catch (error) {
@@ -41,7 +46,7 @@ export const toggleCommentLike = async (commentId, value = 1) => {
     const response = await axiosInstance.post(LIKE_ENDPOINTS.TOGGLE_LIKE, {
       targetType: "Comment",
       targetId: commentId,
-      value
+      value,
     });
     return response.data;
   } catch (error) {
@@ -53,8 +58,9 @@ export const toggleCommentLike = async (commentId, value = 1) => {
 export const getLikeCounts = async (targetType, targetId) => {
   try {
     const response = await axiosInstance.get(LIKE_ENDPOINTS.GET_LIKES, {
-      params: { targetType, targetId }
+      params: { targetType, targetId },
     });
+    console.log(response.data);
     return response.data;
   } catch (error) {
     throw error;
@@ -66,8 +72,9 @@ export const getUserVote = async (targetType, targetId) => {
   try {
     const response = await axiosInstance.post("/v1/likes/all-likes", {
       targetType,
-      targetId
+      targetId,
     });
+    console.log(response.data);
     return response.data;
   } catch (error) {
     throw error;

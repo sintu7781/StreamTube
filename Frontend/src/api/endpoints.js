@@ -38,6 +38,15 @@ export const CHANNEL_ENDPOINTS = {
   DELETE_CHANNEL: `${API_VERSION}/channels/me`,
 };
 
+export const SUBSCRIPTION_ENDPOINTS = {
+  SUBSCRIBED_TO_CHANNEL: (channelId) =>
+    `${API_VERSION}/subscriptions/${channelId}`,
+  UNSUBSCRIBED_FROM_CHANNEL: (channelId) =>
+    `${API_VERSION}/subscriptions/${channelId}`,
+  CHECH_SUBSCRIPTION_STATUS: (channelId) =>
+    `${API_VERSION}/subscriptions/${channelId}/status`,
+};
+
 export const COMMENT_ENDPOINTS = {
   GET_VIDEO_COMMENTS: (videoId) => `${API_VERSION}/comments/video/${videoId}`,
   CREATE_COMMENT: `${API_VERSION}/comments`,

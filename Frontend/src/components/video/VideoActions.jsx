@@ -1,65 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  FaThumbsUp, 
-  FaThumbsDown, 
-  FaShare, 
-  FaSpinner 
-} from 'react-icons/fa';
-import { useAuth } from '../../context/AuthContext';
-import { toggleVideoLike, getUserVote, getLikeCounts } from '../../api/likes';
-import { formatViews } from '../../utils/format';
-import WatchLaterButton from '../common/WatchLaterButton';
+import { useState, useEffect } from "react";
+import { FaThumbsUp, FaThumbsDown, FaShare, FaSpinner } from "react-icons/fa";
+import { useAuth } from "../../context/AuthContext";
+import { toggleVideoLike, getUserVote, getLikeCounts } from "../../api/likes";
+import { formatLikes } from "../../utils/format";
+import WatchLaterButton from "../common/WatchLaterButton";
 
 const VideoActions = ({ video, onVideoUpdate }) => {
-  const { currentUser } = useAuth();
+  const { user } = useAuth();
   const [likeData, setLikeData] = useState({
     likes: video?.metadata?.likes || 0,
     dislikes: video?.metadata?.dislikes || 0,
-    userVote: 0
+    userVote: 0,
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (video && currentUser) {
+    if (video && user) {
       loadLikeData();
     }
-  }, [video?._id, currentUser]);
+  }, [video?._id, user]);
 
   const loadLikeData = async () => {
     try {
       const [likeCounts, userVote] = await Promise.all([
-        getLikeCounts('Video', video._id),
-        getUserVote('Video', video._id)
+        getLikeCounts("Video", video._id),
+        getUserVote("Video", video._id),
       ]);
-      
+
       setLikeData({
         likes: likeCounts.data.likes,
         dislikes: likeCounts.data.dislikes,
-        userVote: userVote.data
+        userVote: userVote.data,
       });
     } catch (error) {
-      console.error('Error loading like data:', error);
+      console.error("Error loading like data:", error);
     }
   };
 
   const handleLike = async (value) => {
-    if (!currentUser) {
+    if (!user) {
       // Could show login modal here
       return;
     }
 
     try {
       setLoading(true);
-      await toggleVideoLike(video._id, value);
-      
+
       // Update local state optimistically
-      setLikeData(prevData => {
+      setLikeData((prevData) => {
         const isCurrentlyLiked = prevData.userVote === value;
         const newUserVote = isCurrentlyLiked ? 0 : value;
-        
+
         let newLikes = prevData.likes;
         let newDislikes = prevData.dislikes;
-        
+
         if (value === 1) {
           // Like button clicked
           newLikes += isCurrentlyLiked ? -1 : 1;
@@ -73,11 +67,11 @@ const VideoActions = ({ video, onVideoUpdate }) => {
             newLikes -= 1;
           }
         }
-        
+
         return {
           likes: Math.max(0, newLikes),
           dislikes: Math.max(0, newDislikes),
-          userVote: newUserVote
+          userVote: newUserVote,
         };
       });
 
@@ -88,12 +82,14 @@ const VideoActions = ({ video, onVideoUpdate }) => {
           metadata: {
             ...video.metadata,
             likes: likeData.likes,
-            dislikes: likeData.dislikes
-          }
+            dislikes: likeData.dislikes,
+          },
         });
       }
+
+      await toggleVideoLike(video._id, value);
     } catch (error) {
-      console.error('Error toggling like:', error);
+      console.error("Error toggling like:", error);
       // Revert optimistic update on error
       loadLikeData();
     } finally {
@@ -107,16 +103,16 @@ const VideoActions = ({ video, onVideoUpdate }) => {
         await navigator.share({
           title: video.title,
           text: video.description,
-          url: window.location.href
+          url: window.location.href,
         });
       } else {
         // Fallback: copy to clipboard
         await navigator.clipboard.writeText(window.location.href);
         // Could show a toast notification here
-        alert('Link copied to clipboard!');
+        alert("Link copied to clipboard!");
       }
     } catch (error) {
-      console.error('Error sharing:', error);
+      console.error("Error sharing:", error);
     }
   };
 
@@ -131,35 +127,35 @@ const VideoActions = ({ video, onVideoUpdate }) => {
           disabled={loading}
           className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${
             likeData.userVote === 1
-              ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
-              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-          } ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
+              ? "text-green-600 bg-red-50 dark:bg-red-900/20"
+              : "text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+          } ${loading ? "cursor-not-allowed opacity-50" : ""}`}
         >
           {loading && likeData.userVote !== 1 ? (
             <FaSpinner className="animate-spin mr-2" size={16} />
           ) : (
             <FaThumbsUp className="mr-2" size={16} />
           )}
-          <span>{formatViews(likeData.likes)}</span>
+          <span>{formatLikes(likeData.likes)}</span>
         </button>
-        
+
         <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
-        
+
         <button
           onClick={() => handleLike(-1)}
           disabled={loading}
           className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${
             likeData.userVote === -1
-              ? 'text-red-600 bg-red-50 dark:bg-red-900/20'
-              : 'text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-          } ${loading ? 'cursor-not-allowed opacity-50' : ''}`}
+              ? "text-red-600 bg-red-50 dark:bg-red-900/20"
+              : "text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+          } ${loading ? "cursor-not-allowed opacity-50" : ""}`}
         >
           {loading && likeData.userVote !== -1 ? (
             <FaSpinner className="animate-spin mr-2" size={16} />
           ) : (
             <FaThumbsDown className="mr-2" size={16} />
           )}
-          <span>{formatViews(likeData.dislikes)}</span>
+          <span>{formatLikes(likeData.dislikes)}</span>
         </button>
       </div>
 
@@ -173,7 +169,7 @@ const VideoActions = ({ video, onVideoUpdate }) => {
       </button>
 
       {/* Watch Later Button */}
-      <WatchLaterButton 
+      <WatchLaterButton
         videoId={video._id}
         variant="outline"
         size="sm"
