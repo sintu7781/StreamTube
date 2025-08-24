@@ -14,8 +14,8 @@ router.use(verifyJWT);
 
 router.route("/:videoId").get(getVideoComments).post(createComment);
 
-router.route("/:id").patch(updateComment).delete(deleteComment);
-
 router.route("/:id/pin").patch(togglePinComment);
+
+router.route("/:id").patch(updateComment).delete(deleteComment);
 
 export default router;

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import ProfilePictureUpload from '../components/common/ProfilePictureUpload';
-import { updateChannelAvatar, removeChannelAvatar } from '../api/settings';
-import { getChannel } from '../api/channel';
+import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import ProfilePictureUpload from "../components/common/ProfilePictureUpload";
+import { updateChannelAvatar, removeChannelAvatar } from "../api/settings";
+import { getChannel } from "../api/channel";
 import {
   FaEdit,
   FaSave,
@@ -12,26 +12,26 @@ import {
   FaVideo,
   FaChartLine,
   FaCog,
-} from 'react-icons/fa';
+} from "react-icons/fa";
 
 const ChannelManagementPage = () => {
   const { user } = useAuth();
   const [channel, setChannel] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [avatarLoading, setAvatarLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('general');
+  const [message, setMessage] = useState("");
+  const [activeTab, setActiveTab] = useState("general");
 
   const [channelData, setChannelData] = useState({
-    name: '',
-    description: '',
-    visibility: 'public',
+    name: "",
+    description: "",
+    visibility: "public",
   });
 
   const tabs = [
-    { id: 'general', label: 'General', icon: FaCog },
-    { id: 'branding', label: 'Branding', icon: FaEdit },
-    { id: 'analytics', label: 'Analytics', icon: FaChartLine },
+    { id: "general", label: "General", icon: FaCog },
+    { id: "branding", label: "Branding", icon: FaEdit },
+    { id: "analytics", label: "Analytics", icon: FaChartLine },
   ];
 
   useEffect(() => {
@@ -45,30 +45,30 @@ const ChannelManagementPage = () => {
       const response = await getChannel();
       setChannel(response.data);
       setChannelData({
-        name: response.data.name || '',
-        description: response.data.description || '',
-        visibility: response.data.visibility || 'public',
+        name: response.data.name || "",
+        description: response.data.description || "",
+        visibility: response.data.visibility || "public",
       });
     } catch (error) {
-      console.error('Failed to fetch channel data:', error);
-      setMessage('Failed to load channel data');
+      console.error("Failed to fetch channel data:", error);
+      setMessage("Failed to load channel data");
     }
   };
 
   const handleChannelUpdate = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       // Here you would make an API call to update channel info
       // For now, simulate the update
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setMessage('Channel updated successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setMessage("Channel updated successfully!");
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage('Failed to update channel. Please try again.');
+      setMessage("Failed to update channel. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -76,16 +76,16 @@ const ChannelManagementPage = () => {
 
   const handleChannelAvatarUpload = async (file) => {
     setAvatarLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const response = await updateChannelAvatar(file);
       setChannel(response.data);
-      setMessage('Channel avatar updated successfully!');
-      
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Channel avatar updated successfully!");
+
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage('Failed to update channel avatar. Please try again.');
+      setMessage("Failed to update channel avatar. Please try again.");
     } finally {
       setAvatarLoading(false);
     }
@@ -93,16 +93,16 @@ const ChannelManagementPage = () => {
 
   const handleChannelAvatarRemove = async () => {
     setAvatarLoading(true);
-    setMessage('');
+    setMessage("");
 
     try {
       const response = await removeChannelAvatar();
       setChannel(response.data);
-      setMessage('Channel avatar removed successfully!');
-      
-      setTimeout(() => setMessage(''), 3000);
+      setMessage("Channel avatar removed successfully!");
+
+      setTimeout(() => setMessage(""), 3000);
     } catch (error) {
-      setMessage('Failed to remove channel avatar. Please try again.');
+      setMessage("Failed to remove channel avatar. Please try again.");
     } finally {
       setAvatarLoading(false);
     }
@@ -113,8 +113,8 @@ const ChannelManagementPage = () => {
       onClick={() => setActiveTab(tab.id)}
       className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
         activeTab === tab.id
-          ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+          ? "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+          : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
       }`}
     >
       <tab.icon className="mr-3 h-5 w-5" />
@@ -152,7 +152,7 @@ const ChannelManagementPage = () => {
               <span className="text-gray-500 dark:text-gray-400">@</span>
               <input
                 type="text"
-                value={channel?.handle || ''}
+                value={channel?.handle || ""}
                 disabled
                 className="ml-1 flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed"
               />
@@ -303,7 +303,8 @@ const ChannelManagementPage = () => {
             Analytics Coming Soon
           </h4>
           <p className="text-gray-500 dark:text-gray-400">
-            Detailed analytics and insights for your channel will be available here.
+            Detailed analytics and insights for your channel will be available
+            here.
           </p>
         </div>
       </div>
@@ -312,11 +313,11 @@ const ChannelManagementPage = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'general':
+      case "general":
         return renderGeneralTab();
-      case 'branding':
+      case "branding":
         return renderBrandingTab();
-      case 'analytics':
+      case "analytics":
         return renderAnalyticsTab();
       default:
         return renderGeneralTab();
@@ -352,13 +353,15 @@ const ChannelManagementPage = () => {
         </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-lg ${
-            message.includes('successfully') 
-              ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
-              : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-          }`}>
+          <div
+            className={`mb-6 p-4 rounded-lg ${
+              message.includes("successfully")
+                ? "bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300"
+                : "bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300"
+            }`}
+          >
             <div className="flex items-center">
-              {message.includes('successfully') ? (
+              {message.includes("successfully") ? (
                 <FaSave className="mr-2" />
               ) : (
                 <FaTimes className="mr-2" />

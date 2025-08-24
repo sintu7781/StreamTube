@@ -15,8 +15,11 @@ router.route("/count").get(getLikeCounts);
 router.use(verifyJWT);
 
 router.route("/toggle").post(toggleLike);
+
 router.route("/all-likes").get(getUserLikeVideos);
+
 router.route("/liked-videos").get(getUserLikedVideos);
+
 router.route("/liked-comments").get(getUserLikedComments);
 
 export default router;

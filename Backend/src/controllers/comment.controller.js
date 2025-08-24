@@ -40,6 +40,8 @@ const createComment = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Comment not create");
   }
 
+  await incrementAnalytics(video.channel, "comments", 1);
+
   return res
     .status(200)
     .json(new ApiResponse(200, comment, "Comment create successfully"));
@@ -161,6 +163,8 @@ const togglePinComment = asyncHandler(async (req, res) => {
 
   comment.isPinned = !comment.isPinned;
   await comment.save();
+
+  await incrementAnalytics(video.channel, "comments", -1);
 
   return res
     .status(200)

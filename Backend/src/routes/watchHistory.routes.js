@@ -13,8 +13,11 @@ const router = Router();
 router.use(verifyJWT);
 
 router.route("/").get(getWatchHistory);
+
 router.route("/add").post(addWatchHistory);
+
 router.route("/remove/:videoId").delete(removeFromHistory);
+
 router.route("/clear").delete(clearWatchHistory);
 
 export default router;

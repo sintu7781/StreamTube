@@ -5,43 +5,41 @@ import ChannelAnalytics from "../models/channelAnalytics.model.js";
 import Channel from "../models/channel.model.js";
 import Video from "../models/video.model.js";
 
+// 🔹 Utility: Normalize date to start of the day
+const normalizeDate = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 // Create or update channel analytics for a specific date
 const createOrUpdateAnalytics = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   const { date, views, subscribers, videos } = req.body;
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
 
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You can only update analytics for your own channel");
+    throw new ApiError(
+      403,
+      "You can only update analytics for your own channel"
+    );
   }
 
-  // Parse date or use current date
-  const analyticsDate = date ? new Date(date) : new Date();
-  analyticsDate.setHours(0, 0, 0, 0); // Set to start of day
+  const analyticsDate = normalizeDate(date || new Date());
 
-  // Check if analytics already exists for this date
   let analytics = await ChannelAnalytics.findOne({
     channel: channelId,
     date: analyticsDate,
   });
 
   if (analytics) {
-    // Update existing analytics
-    analytics.views = views !== undefined ? views : analytics.views;
-    analytics.subscribers = subscribers !== undefined ? subscribers : analytics.subscribers;
-    analytics.videos = videos !== undefined ? videos : analytics.videos;
+    analytics.views = views ?? analytics.views;
+    analytics.subscribers = subscribers ?? analytics.subscribers;
+    analytics.videos = videos ?? analytics.videos;
   } else {
-    // Create new analytics
     analytics = new ChannelAnalytics({
       channel: channelId,
       date: analyticsDate,
@@ -53,9 +51,11 @@ const createOrUpdateAnalytics = asyncHandler(async (req, res) => {
 
   await analytics.save();
 
-  res.status(200).json(
-    new ApiResponse(200, analytics, "Channel analytics updated successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, analytics, "Channel analytics updated successfully")
+    );
 });
 
 // Get channel analytics for a specific date range
@@ -63,181 +63,163 @@ const getChannelAnalytics = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   const { startDate, endDate, period = "30" } = req.query;
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
 
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You can only view analytics for your own channel");
   }
 
+  // Build date filter
   let query = { channel: channelId };
-
-  // Add date range filter if provided
   if (startDate && endDate) {
     query.date = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate),
+      $gte: normalizeDate(startDate),
+      $lte: normalizeDate(endDate),
     };
   } else {
-    // Default to last N days based on period
     const days = parseInt(period);
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    
-    query.date = {
-      $gte: startDate,
-      $lte: endDate,
-    };
+    const now = new Date();
+    const past = new Date();
+    past.setDate(now.getDate() - days);
+    query.date = { $gte: normalizeDate(past), $lte: normalizeDate(now) };
   }
 
   const analytics = await ChannelAnalytics.find(query).sort({ date: 1 });
 
-  // Calculate summary statistics
-  const totalViews = analytics.reduce((sum, item) => sum + item.views, 0);
-  const totalSubscribers = analytics.length > 0 ? analytics[analytics.length - 1].subscribers : 0;
-  const totalVideos = analytics.reduce((sum, item) => sum + item.videos, 0);
+  // Fetch videos once
+  const videos = await Video.find({ channel: channelId });
+  const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
+  const totalLikes = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+  const totalComments = videos.reduce((sum, v) => sum + (v.comments || 0), 0);
 
-  // Calculate growth rates
-  let viewsGrowth = 0;
-  let subscribersGrowth = 0;
+  const currentSubs = channel.subscribers || 0;
+  const currentVideos = videos.length;
 
+  // Growth calculations
+  let viewsGrowth = 0,
+    subscribersGrowth = 0,
+    likesGrowth = 0,
+    commentsGrowth = 0;
   if (analytics.length >= 2) {
     const first = analytics[0];
     const last = analytics[analytics.length - 1];
-    
-    if (first.views > 0) {
+
+    if (first.views > 0)
       viewsGrowth = ((last.views - first.views) / first.views) * 100;
-    }
-    
-    if (first.subscribers > 0) {
-      subscribersGrowth = ((last.subscribers - first.subscribers) / first.subscribers) * 100;
-    }
+    if (first.subscribers > 0)
+      subscribersGrowth =
+        ((last.subscribers - first.subscribers) / first.subscribers) * 100;
+    if (totalLikes > 0)
+      likesGrowth = ((totalLikes - first.likes) / first.likes) * 100 || 0;
+    if (totalComments > 0)
+      commentsGrowth =
+        ((totalComments - first.comments) / first.comments) * 100 || 0;
   }
 
-  // Get current video count
-  const currentVideoCount = await Video.countDocuments({ channel: channelId });
-
-  // Get engagement metrics from videos
-  const videos = await Video.find({ channel: channelId });
-  const totalLikes = videos.reduce((sum, video) => sum + (video.likes || 0), 0);
-  const totalComments = videos.reduce((sum, video) => sum + (video.comments || 0), 0);
-
   const result = {
-    analytics,
-    summary: {
+    overview: {
       totalViews,
-      totalSubscribers,
-      totalVideos: currentVideoCount,
+      totalSubscribers: currentSubs,
+      totalVideos: currentVideos,
       totalLikes,
       totalComments,
-      viewsGrowth: Math.round(viewsGrowth * 100) / 100,
-      subscribersGrowth: Math.round(subscribersGrowth * 100) / 100,
     },
     trends: {
+      viewsGrowth: Number(viewsGrowth.toFixed(2)),
+      subscribersGrowth: Number(subscribersGrowth.toFixed(2)),
+      likesGrowth: Number(likesGrowth.toFixed(2)),
+      commentsGrowth: Number(commentsGrowth.toFixed(2)),
       viewsChange: viewsGrowth >= 0 ? "up" : "down",
       subscribersChange: subscribersGrowth >= 0 ? "up" : "down",
+      likesChange: likesGrowth >= 0 ? "up" : "down",
+      commentsChange: commentsGrowth >= 0 ? "up" : "down",
     },
+    recentData: analytics.map((a) => ({
+      date: a.date,
+      views: a.views,
+      subscribers: a.subscribers,
+      videos: a.videos,
+    })),
   };
 
-  res.status(200).json(
-    new ApiResponse(200, result, "Channel analytics retrieved successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, result, "Channel analytics retrieved successfully")
+    );
 });
 
 // Get analytics overview for dashboard
 const getAnalyticsOverview = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
-
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You can only view analytics for your own channel");
   }
 
-  // Get last 7 days of analytics
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(startDate.getDate() - 7);
+  const now = new Date();
+  const past = new Date();
+  past.setDate(now.getDate() - 7);
 
   const recentAnalytics = await ChannelAnalytics.find({
     channel: channelId,
-    date: { $gte: startDate, $lte: endDate },
+    date: { $gte: normalizeDate(past), $lte: normalizeDate(now) },
   }).sort({ date: 1 });
 
-  // Get video statistics
   const videos = await Video.find({ channel: channelId });
-  const totalViews = videos.reduce((sum, video) => sum + (video.views || 0), 0);
-  const totalLikes = videos.reduce((sum, video) => sum + (video.likes || 0), 0);
-  const totalComments = videos.reduce((sum, video) => sum + (video.comments || 0), 0);
+  const totalViews = videos.reduce((sum, v) => sum + (v.views || 0), 0);
+  const totalLikes = videos.reduce((sum, v) => sum + (v.likes || 0), 0);
+  const totalComments = videos.reduce((sum, v) => sum + (v.comments || 0), 0);
 
-  // Get top performing videos
   const topVideos = await Video.find({ channel: channelId })
     .sort({ views: -1 })
     .limit(5)
     .select("title views likes comments duration");
 
-  // Calculate engagement rate
-  const engagementRate = totalViews > 0 ? ((totalLikes + totalComments) / totalViews) * 100 : 0;
+  const engagementRate =
+    totalViews > 0 ? ((totalLikes + totalComments) / totalViews) * 100 : 0;
 
-  const overview = {
-    totalViews,
-    totalSubscribers: channel.subscribers || 0,
-    totalVideos: videos.length,
-    totalLikes,
-    totalComments,
-    engagementRate: Math.round(engagementRate * 100) / 100,
-    recentData: recentAnalytics.map(item => ({
-      date: item.date,
-      views: item.views,
-      subscribers: item.subscribers,
-      videos: item.videos,
+  const result = {
+    overview: {
+      totalViews,
+      totalSubscribers: channel.subscribers || 0,
+      totalVideos: videos.length,
+      totalLikes,
+      totalComments,
+      engagementRate: Number(engagementRate.toFixed(2)),
+    },
+    recentData: recentAnalytics.map((a) => ({
+      date: a.date,
+      views: a.views,
+      subscribers: a.subscribers,
+      videos: a.videos,
     })),
     topVideos,
   };
 
-  res.status(200).json(
-    new ApiResponse(200, overview, "Analytics overview retrieved successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, result, "Analytics overview retrieved successfully")
+    );
 });
 
 // Get audience demographics (mock data for now)
 const getAudienceDemographics = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
-
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(403, "You can only view analytics for your own channel");
   }
 
-  // Mock demographics data (in a real app, this would come from analytics tracking)
   const demographics = {
     ageGroups: [
       { age: "18-24", percentage: 35 },
@@ -261,80 +243,69 @@ const getAudienceDemographics = asyncHandler(async (req, res) => {
     ],
   };
 
-  res.status(200).json(
-    new ApiResponse(200, demographics, "Audience demographics retrieved successfully")
-  );
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { audience: demographics },
+        "Audience demographics retrieved successfully"
+      )
+    );
 });
 
 // Delete analytics for a specific date
 const deleteAnalytics = asyncHandler(async (req, res) => {
   const { channelId, date } = req.params;
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
+  if (!date) throw new ApiError(400, "Date is required");
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
-
-  if (!date) {
-    throw new ApiError(400, "Date is required");
-  }
-
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You can only delete analytics for your own channel");
+    throw new ApiError(
+      403,
+      "You can only delete analytics for your own channel"
+    );
   }
-
-  const analyticsDate = new Date(date);
-  analyticsDate.setHours(0, 0, 0, 0);
 
   const analytics = await ChannelAnalytics.findOneAndDelete({
     channel: channelId,
-    date: analyticsDate,
+    date: normalizeDate(date),
   });
 
-  if (!analytics) {
+  if (!analytics)
     throw new ApiError(404, "Analytics not found for the specified date");
-  }
 
-  res.status(200).json(
-    new ApiResponse(200, {}, "Analytics deleted successfully")
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Analytics deleted successfully"));
 });
 
-// Bulk update analytics (for importing data)
+// Bulk update analytics (import)
 const bulkUpdateAnalytics = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
   const { analytics } = req.body;
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
-  }
-
+  if (!channelId) throw new ApiError(400, "Channel ID is required");
   if (!analytics || !Array.isArray(analytics)) {
     throw new ApiError(400, "Analytics array is required");
   }
 
-  // Check if channel exists
   const channel = await Channel.findById(channelId);
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  // Check if user owns the channel
+  if (!channel) throw new ApiError(404, "Channel not found");
   if (channel.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(403, "You can only update analytics for your own channel");
+    throw new ApiError(
+      403,
+      "You can only update analytics for your own channel"
+    );
   }
 
-  const operations = analytics.map(item => ({
+  const operations = analytics.map((item) => ({
     updateOne: {
       filter: {
         channel: channelId,
-        date: new Date(item.date),
+        date: normalizeDate(item.date),
       },
       update: {
         $set: {
@@ -349,9 +320,9 @@ const bulkUpdateAnalytics = asyncHandler(async (req, res) => {
 
   const result = await ChannelAnalytics.bulkWrite(operations);
 
-  res.status(200).json(
-    new ApiResponse(200, result, "Analytics bulk updated successfully")
-  );
+  res
+    .status(200)
+    .json(new ApiResponse(200, result, "Analytics bulk updated successfully"));
 });
 
 export {

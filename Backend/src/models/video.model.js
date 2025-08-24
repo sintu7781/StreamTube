@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 import "./view.model.js";
+import { incrementAnalytics } from "../utils/analytics.js";
 
 const videoSchema = new mongoose.Schema(
   {
@@ -80,11 +81,26 @@ videoSchema.methods.incrementViews = async function ({
   watchedPercentage = 0,
 }) {
   const View = mongoose.model("View");
+  const ChannelAnalytics = mongoose.model("ChannelAnalytics");
 
-  const existing = await View.findOne({
-    video: this._id,
-    $or: [userId, sessionId].filter(Boolean),
-  });
+  // Build query conditions
+  const conditions = [{ video: this._id }];
+  const or = [];
+
+  if (userId) or.push({ userId });
+  if (sessionId) or.push({ sessionId });
+  if (!userId && !sessionId && ipAddress) {
+    // fallback for anonymous users
+    or.push({ ipAddress });
+  }
+
+  if (or.length > 0) {
+    conditions.push({ $or: or });
+  }
+
+  const existing = await View.findOne({ $and: conditions });
+
+  let isUnique = false;
 
   if (!existing) {
     // New unique view
@@ -98,7 +114,9 @@ videoSchema.methods.incrementViews = async function ({
       watchedPercentage,
     });
     this.metadata.uniqueViews += 1;
+    isUnique = true;
   } else {
+    // Update watch session
     existing.duration += duration;
     existing.watchedPercentage = Math.max(
       existing.watchedPercentage,
@@ -110,11 +128,13 @@ videoSchema.methods.incrementViews = async function ({
 
   // Always increment total views
   this.metadata.views += 1;
-
   await this.save();
 
   // Update channel stats in background
-  this.updateChannelStats(!existing);
+  this.updateChannelStats(isUnique);
+
+  // ✅ Update daily channel analytics
+  await incrementAnalytics(this.channel, "views");
 
   return {
     views: this.metadata.views,

@@ -39,12 +39,13 @@ export const CHANNEL_ENDPOINTS = {
 };
 
 export const SUBSCRIPTION_ENDPOINTS = {
-  SUBSCRIBED_TO_CHANNEL: (channelId) =>
+  TOGGLE_SUBSCRIPTION: (channelId) =>
     `${API_VERSION}/subscriptions/${channelId}`,
-  UNSUBSCRIBED_FROM_CHANNEL: (channelId) =>
-    `${API_VERSION}/subscriptions/${channelId}`,
-  CHECH_SUBSCRIPTION_STATUS: (channelId) =>
+  CHECK_SUBSCRIPTION_STATUS: (channelId) =>
     `${API_VERSION}/subscriptions/${channelId}/status`,
+  GET_USER_SUBSCRIPTION: `${API_VERSION}/subscriptions/me`,
+  GET_CHANNEL_SUBSCRIPTION: (channelId) =>
+    `${API_VERSION}/subscriptions/${channelId}`,
 };
 
 export const COMMENT_ENDPOINTS = {
@@ -95,4 +96,16 @@ export const WATCH_LATER_ENDPOINTS = {
     `${API_VERSION}/watch-later/${videoId}/toggle`,
   UPDATE_WATCH_LATER_NOTES: (videoId) =>
     `${API_VERSION}/watch-later/${videoId}/notes`,
+};
+
+export const CHANNEL_ANALYTICS_ENDPOINTS = {
+  GET_ANALYTICS_OVERVIEW: (channelId) =>
+    `${API_VERSION}/analytics/${channelId}/overview`,
+  GET_CHANNEL_ANALYTICS: (channelId) => `${API_VERSION}/analytics/${channelId}`,
+  GET_AUDIENCE_DEMOGRAPHICS: (channelId) =>
+    `${API_VERSION}/analytics/${channelId}/demographics`,
+  BULK_UPDATE_ANALYTICS: (channelId) =>
+    `${API_VERSION}/analytics/${channelId}/bulk`,
+  DELETE_ANALYTICS: (channelId, date) =>
+    `${API_VERSION}/analytics/${channelId}/${date}`,
 };

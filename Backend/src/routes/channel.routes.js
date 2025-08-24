@@ -18,9 +18,9 @@ const router = Router();
 // Public routes
 router.route("/search").get(searchChannels);
 
-router.route("/:handle").get(getChannelByHandle);
-
 router.route("/:handle/videos").get(optionalAuth, getChannelVideos);
+
+router.route("/:handle").get(getChannelByHandle);
 
 router.use(verifyJWT);
 

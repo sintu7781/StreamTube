@@ -36,6 +36,7 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
   const mainNavItems = [
     { icon: FaHome, label: "Home", path: "/" },
     { icon: FaBell, label: "Notifications", path: "/notifications" },
+    { icon: FaBell, label: "Subscriptions", path: "/subscriptions" },
     { icon: FaHistory, label: "History", path: "/history" },
     { icon: FaHeart, label: "Liked Videos", path: "/liked" },
     { icon: FaComment, label: "Liked Comments", path: "/liked-comments" },
@@ -48,12 +49,23 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
     { name: "Gaming", icon: FaGamepad, path: "/category?category=gaming" },
     { name: "Movies", icon: FaFilm, path: "/category?category=movies" },
     { name: "News", icon: FaNewspaper, path: "/category?category=news" },
-    { name: "Education", icon: FaGraduationCap, path: "/category?category=education" },
-    { name: "Technology", icon: FaLightbulb, path: "/category?category=technology" },
+    {
+      name: "Education",
+      icon: FaGraduationCap,
+      path: "/category?category=education",
+    },
+    {
+      name: "Technology",
+      icon: FaLightbulb,
+      path: "/category?category=technology",
+    },
     { name: "Sports", icon: FaDumbbell, path: "/category?category=sports" },
-    { name: "Entertainment", icon: FaUsers, path: "/category?category=entertainment" },
+    {
+      name: "Entertainment",
+      icon: FaUsers,
+      path: "/category?category=entertainment",
+    },
   ];
-
 
   const userItems = [
     {
@@ -206,7 +218,6 @@ const Sidebar = ({ isOpen, isCollapsed }) => {
                   })}
                 </div>
               </div>
-
 
               {user && (
                 <div className="mb-8">

@@ -2,9 +2,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import {
   checkSubscriptionStatus,
-  subscribeToChannel,
-  unsubscribeFromChannel,
-} from "../../api/subscription";
+  toggleSubscription,
+} from "../../api/subscriptions";
 
 const SubscribeButton = ({ channelId }) => {
   const { user } = useAuth();
@@ -32,13 +31,8 @@ const SubscribeButton = ({ channelId }) => {
 
     setLoading(true);
     try {
-      if (subscribed) {
-        await unsubscribeFromChannel(channelId);
-        setSubscribed(false);
-      } else {
-        await subscribeToChannel(channelId);
-        setSubscribed(true);
-      }
+      const res = await toggleSubscription(channelId);
+      setSubscribed(res.data.subscribed);
     } catch (err) {
       console.error("Error toggling subscription:", err);
     } finally {

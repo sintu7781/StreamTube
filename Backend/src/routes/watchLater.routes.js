@@ -20,16 +20,22 @@ router.use(verifyJWT);
 
 // Main watch later operations
 router.route("/").get(getWatchLaterList);
+
 router.route("/stats").get(getWatchLaterStats);
+
 router.route("/batch").get(getWatchLaterBatch);
+
 router.route("/clear").delete(clearWatchLater);
+
 router.route("/reorder").patch(reorderWatchLater);
 
 // Individual video operations
-router.route("/:videoId").post(addToWatchLater);
-router.route("/:videoId").delete(removeFromWatchLater);
 router.route("/:videoId/status").get(checkWatchLaterStatus);
+
 router.route("/:videoId/toggle").post(toggleWatchLater);
+
 router.route("/:videoId/notes").patch(updateWatchLaterNotes);
+
+router.route("/:videoId").post(addToWatchLater).delete(removeFromWatchLater);
 
 export default router;

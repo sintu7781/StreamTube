@@ -3,51 +3,68 @@ import Channel from "../models/channel.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { createOrUpdateAnalytics } from "./channelAnalytics.controller.js";
 
-const subscribeToChannel = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
-  const userId = req.user._id;
+const toggleSubscription = asyncHandler(async (req, res) => {
+  try {
+    const { channelId } = req.params;
+    const userId = req.user?._id;
 
-  if (!channelId) {
-    throw new ApiError(400, "Channel ID is required");
+    console.log("➡️ Toggle subscription request", { userId, channelId });
+
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    // ✅ check if channel exists
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      console.error("❌ Channel not found:", channelId);
+      throw new ApiError(401, "Channel not found");
+    }
+
+    // ✅ check existing subscription
+    let subscription = await Subscription.findOne({
+      user: userId,
+      channel: channelId,
+    });
+
+    if (subscription) {
+      console.log("🔄 Already subscribed, unsubscribing...");
+      await subscription.deleteOne();
+      await createOrUpdateAnalytics(channelId, { subscribers: -1 });
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            { subscribed: false },
+            "Channel unsubscribed sucessfully"
+          )
+        );
+    } else {
+      console.log("➕ Creating subscription...");
+      subscription = new Subscription({ user: userId, channel: channelId });
+      await subscription.save();
+
+      await createOrUpdateAnalytics(channelId, { subscribers: 1 });
+
+      return res
+        .status(201)
+        .json(
+          new ApiResponse(
+            201,
+            { subscribed: true },
+            "Channel subscribed successfully"
+          )
+        );
+    }
+  } catch (error) {
+    console.error("🔥 Subscription toggle error:", error);
+    return res
+      .status(500)
+      .json({ message: "Internal Server Error", error: error.message });
   }
-
-  const channel = await Channel.findById(channelId);
-
-  if (!channel) {
-    throw new ApiError(404, "Channel not found");
-  }
-
-  if (channel.owner.equals(userId)) {
-    throw new ApiError(400, "You cannot subscribe to your own channel");
-  }
-
-  const subscription = await Subscription.create({
-    user: userId,
-    channel: channelId,
-  });
-
-  return res
-    .status(201)
-    .json(new ApiResponse(201, subscription, "Subscribed successfully"));
-});
-
-const unsubscribeFromChannel = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
-  const userId = req.user._id;
-
-  const subscription = await Subscription.findOneAndDelete({
-    user: userId,
-    channel: channelId,
-  });
-
-  if (!subscription) {
-    throw new ApiError(404, "Not subscribed to this channel");
-  }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, {}, "Unsubscribed successfully"));
 });
 
 const checkSubscriptionStatus = asyncHandler(async (req, res) => {
@@ -107,8 +124,7 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
 });
 
 export {
-  subscribeToChannel,
-  unsubscribeFromChannel,
+  toggleSubscription,
   checkSubscriptionStatus,
   getUserSubscriptions,
   getChannelSubscribers,

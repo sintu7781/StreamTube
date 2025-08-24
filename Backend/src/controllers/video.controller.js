@@ -5,6 +5,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Video from "../models/video.model.js";
 import Channel from "../models/channel.model.js";
 import WatchHistory from "../models/watchHistory.model.js";
+import { createOrUpdateAnalytics } from "./channelAnalytics.controller.js";
+import mongoose from "mongoose";
 
 const fileUpload = async (path, resource_type, folder) => {
   if (!path) {
@@ -83,65 +85,77 @@ const uploadVideo = asyncHandler(async (req, res) => {
     $inc: { "stats.videos": 1 },
   });
 
+  await createOrUpdateAnalytics(req.user.channelId, { videos: 1 });
+
   return res
     .status(200)
     .json(new ApiResponse(200, video, "Video uploaded successfully"));
 });
 
-const getSingleVideo = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const userId = req.user?._id;
+const getSingleVideo = asyncHandler(async (req, res, next) => {
+  console.log(1);
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id;
 
-  const video = await Video.findById(id).populate({
-    path: "channel",
-    select: "name handle stats",
-    populate: {
-      path: "owner",
-      select: "profile",
-    },
-  });
-
-  if (!video) {
-    throw new ApiError(404, "Video not found");
-  }
-
-  // Increment views with proper unique view tracking
-  const viewData = {
-    userId,
-    sessionId: req.sessionID || req.headers["x-session-id"],
-    ipAddress:
-      req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
-    userAgent: req.get("User-Agent"),
-    duration: 0,
-    watchedPercentage: 0,
-  };
-
-  await video.incrementViews(viewData);
-
-  // Add to watch history if user is authenticated
-  if (userId) {
-    try {
-      const deviceInfo = {
-        userAgent: req.get("User-Agent"),
-        ipAddress: req.ip || req.connection.remoteAddress,
-        deviceType: getDeviceType(req.get("User-Agent")),
-      };
-
-      await WatchHistory.addOrUpdateWatchHistory(userId, id, {
-        watchDuration: 0,
-        watchPercentage: 0,
-        completed: false,
-        deviceInfo,
-      });
-    } catch (error) {
-      console.error("Error adding to watch history:", error);
-      // Don't fail the request if watch history fails
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new ApiError(400, "Invalid video ID"));
     }
-  }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video, "Video fetched successfully"));
+    const video = await Video.findById(id).populate({
+      path: "channel",
+      select: "name handle stats",
+      populate: {
+        path: "owner",
+        select: "profile",
+      },
+    });
+
+    if (!video) {
+      throw new ApiError(404, "Video not found");
+    }
+
+    // Increment views with proper unique view tracking
+    const viewData = {
+      userId,
+      sessionId: req.sessionID || req.headers["x-session-id"],
+      ipAddress:
+        req.ip || req.connection.remoteAddress || req.socket.remoteAddress,
+      userAgent: req.get("User-Agent"),
+      duration: 0,
+      watchedPercentage: 0,
+    };
+
+    await video.incrementViews(viewData);
+
+    // Add to watch history if user is authenticated
+    if (userId) {
+      try {
+        const deviceInfo = {
+          userAgent: req.get("User-Agent"),
+          ipAddress: req.ip || req.connection.remoteAddress,
+          deviceType: getDeviceType(req.get("User-Agent")),
+        };
+
+        await WatchHistory.addOrUpdateWatchHistory(userId, id, {
+          watchDuration: 0,
+          watchPercentage: 0,
+          completed: false,
+          deviceInfo,
+        });
+      } catch (error) {
+        console.error("Error adding to watch history:", error);
+        // Don't fail the request if watch history fails
+      }
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, video, "Video fetched successfully"));
+  } catch (error) {
+    console.log(`Error while fetching single video: ${error.stack || error}`);
+    throw new ApiError(500, "Error while fetching single video");
+  }
 });
 
 const getChannelVideos = asyncHandler(async (req, res) => {
@@ -550,7 +564,7 @@ const getRelatedVideos = asyncHandler(async (req, res) => {
 });
 
 // Helper function to determine device type
-function getDeviceType(userAgent) {
+const getDeviceType = (userAgent) => {
   if (!userAgent) return "desktop";
 
   const ua = userAgent.toLowerCase();
@@ -568,7 +582,7 @@ function getDeviceType(userAgent) {
   }
 
   return "desktop";
-}
+};
 
 const incrementView = asyncHandler(async (req, res) => {
   const { id } = req.params;
@@ -589,8 +603,6 @@ const incrementView = asyncHandler(async (req, res) => {
     duration,
     watchedPercentage,
   };
-
-  // console.log(viewData);
 
   const updatedViews = await video.incrementViews(viewData);
 

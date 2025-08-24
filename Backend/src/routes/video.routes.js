@@ -21,8 +21,6 @@ router.route("/search").get(searchVideos);
 
 router.route("/category/:category").get(getVideosByCategory);
 
-router.route("/:id").get(getSingleVideo);
-
 router.route("/:id/related").get(getRelatedVideos);
 
 // Protected routes
@@ -39,8 +37,10 @@ router.route("/upload").post(
   uploadVideo
 );
 
-router.route("/update-video/:id").post(upload.single("thumbnail"), updateVideo);
-
 router.route("/:id/views").post(incrementView);
+
+router.route("/:id").get(getSingleVideo);
+
+router.route("/update-video/:id").post(upload.single("thumbnail"), updateVideo);
 
 export default router;

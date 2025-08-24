@@ -25,6 +25,7 @@ import AuthErrorBoundary from "./components/common/AuthErrorBoundary";
 import Header from "./components/layout/Header";
 import Sidebar from "./components/layout/Sidebar";
 import Footer from "./components/layout/Footer";
+import SubscriptionsPage from "./pages/SubscriptionPage";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -90,6 +91,14 @@ function App() {
                 <Route path="/category" element={<CategoryPage />} />
                 <Route path="/watch/:id" element={<WatchPage />} />
                 <Route path="/c/:handle" element={<ChannelPage />} />
+                <Route
+                  path="/subscriptions"
+                  element={
+                    <PrivateRoute>
+                      <SubscriptionsPage />
+                    </PrivateRoute>
+                  }
+                />
                 <Route
                   path="/create-channel"
                   element={
