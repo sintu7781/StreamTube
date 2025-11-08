@@ -35,7 +35,9 @@ export default function SubscriptionsPage() {
             <Card key={sub._id} className="rounded-2xl shadow-md">
               <CardContent className="flex items-center gap-4 p-4">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={sub.channel?.owner?.profile || ""} />
+                  <AvatarImage
+                    src={sub.channel?.owner?.profile?.picture || ""}
+                  />
                   <AvatarFallback>
                     {sub.channel?.name?.[0]?.toUpperCase() || "C"}
                   </AvatarFallback>

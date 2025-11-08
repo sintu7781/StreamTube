@@ -25,15 +25,12 @@ export default function ChannelAnalyticsPage() {
   useEffect(() => {
     (async () => {
       const o = await getAnalyticsOverview(channelId);
-      console.log(`Overview: ${o}`);
       setOverview(o);
 
       const a = await getChannelAnalytics(channelId, { days: 30 });
-      console.log(`Analytics: ${a}`);
       setAnalytics(a.recentData || []);
 
       const d = await getAudienceDemographics(channelId);
-      console.log(`Demographics: ${d}`);
       setDemographics(d.audience || {});
     })();
   }, [channelId]);

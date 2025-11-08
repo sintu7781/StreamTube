@@ -91,7 +91,14 @@ const getUserSubscriptions = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   const subscriptions = await Subscription.find({ user: userId })
-    .populate("channel", "handle name stats owner")
+    .populate({
+      path: "channel",
+      select: "handle name owner stats",
+      populate: {
+        path: "owner",
+        select: "profile username",
+      },
+    })
     .sort({ createdAt: -1 });
 
   return res

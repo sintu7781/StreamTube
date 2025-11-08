@@ -5,7 +5,6 @@ export const getAnalyticsOverview = async (channelId) => {
   const response = await axiosInstance.get(
     CHANNEL_ANALYTICS_ENDPOINTS.GET_ANALYTICS_OVERVIEW(channelId)
   );
-  console.log(`getAnalyticsOverview: ${response}`);
   return response.data;
 };
 export const getChannelAnalytics = async (channelId, params = {}) => {
@@ -13,14 +12,12 @@ export const getChannelAnalytics = async (channelId, params = {}) => {
     CHANNEL_ANALYTICS_ENDPOINTS.GET_CHANNEL_ANALYTICS(channelId),
     { params }
   );
-  console.log(`getChannelAnalytics: ${response}`);
   return response.data;
 };
 export const getAudienceDemographics = async (channelId) => {
   const response = await axiosInstance.get(
     CHANNEL_ANALYTICS_ENDPOINTS.GET_AUDIENCE_DEMOGRAPHICS(channelId)
   );
-  console.log(`getAudienceDemographics: ${response}`);
   return response.data;
 };
 export const bulkUpdateAnalytics = async (channelId, analytics) => {

@@ -93,7 +93,6 @@ const uploadVideo = asyncHandler(async (req, res) => {
 });
 
 const getSingleVideo = asyncHandler(async (req, res, next) => {
-  console.log(1);
   try {
     const { id } = req.params;
     const userId = req.user?._id;

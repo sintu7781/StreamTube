@@ -13,50 +13,45 @@ const normalizeDate = (date) => {
 };
 
 // Create or update channel analytics for a specific date
-const createOrUpdateAnalytics = asyncHandler(async (req, res) => {
-  const { channelId } = req.params;
-  const { date, views, subscribers, videos } = req.body;
+const createOrUpdateAnalytics = async (channelId, updates = {}) => {
+  try {
+    const { date, views, subscribers, videos } = updates;
 
-  if (!channelId) throw new ApiError(400, "Channel ID is required");
+    if (!channelId) throw new ApiError(400, "Channel ID is required");
 
-  const channel = await Channel.findById(channelId);
-  if (!channel) throw new ApiError(404, "Channel not found");
-  if (channel.owner.toString() !== req.user._id.toString()) {
-    throw new ApiError(
-      403,
-      "You can only update analytics for your own channel"
-    );
-  }
+    const channel = await Channel.findById(channelId);
 
-  const analyticsDate = normalizeDate(date || new Date());
+    if (!channel) throw new ApiError(404, "Channel not found");
 
-  let analytics = await ChannelAnalytics.findOne({
-    channel: channelId,
-    date: analyticsDate,
-  });
+    const analyticsDate = normalizeDate(date || new Date());
 
-  if (analytics) {
-    analytics.views = views ?? analytics.views;
-    analytics.subscribers = subscribers ?? analytics.subscribers;
-    analytics.videos = videos ?? analytics.videos;
-  } else {
-    analytics = new ChannelAnalytics({
+    let analytics = await ChannelAnalytics.findOne({
       channel: channelId,
       date: analyticsDate,
-      views: views || 0,
-      subscribers: subscribers || 0,
-      videos: videos || 0,
     });
+
+    if (analytics) {
+      analytics.views = Math.max(0, analytics.views + (updates.views || 0));
+      analytics.subscribers = Math.max(
+        0,
+        analytics.subscribers + (updates.subscribers || 0)
+      );
+      analytics.videos = Math.max(0, analytics.videos + (updates.videos || 0));
+    } else {
+      analytics = new ChannelAnalytics({
+        channel: channelId,
+        date: analyticsDate,
+        views: Math.max(0, updates.views || 0),
+        subscribers: Math.max(0, updates.subscribers || 0),
+        videos: Math.max(0, updates.videos || 0),
+      });
+    }
+
+    await analytics.save();
+  } catch (error) {
+    console.error("Error updating channel analytics:", error);
   }
-
-  await analytics.save();
-
-  res
-    .status(200)
-    .json(
-      new ApiResponse(200, analytics, "Channel analytics updated successfully")
-    );
-});
+};
 
 // Get channel analytics for a specific date range
 const getChannelAnalytics = asyncHandler(async (req, res) => {

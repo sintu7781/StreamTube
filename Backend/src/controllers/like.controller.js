@@ -52,13 +52,12 @@ const getLikeCounts = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, counts, "Like counts fetched successfully"));
 });
 
-const getUserLikeVideos = asyncHandler(async (req, res) => {
+const getUserLikeVideo = asyncHandler(async (req, res) => {
   const { targetType, targetId } = req.body;
-
   const userId = req.user._id;
 
   const like = await Like.getUserVote(userId, targetType, targetId);
-
+  console.log(like);
   return res
     .status(200)
     .json(new ApiResponse(200, like, "All like fetched successfully"));
@@ -78,7 +77,8 @@ const getUserLikedVideos = asyncHandler(async (req, res) => {
   })
     .populate({
       path: "target",
-      select: "title description thumbnail media visibility tags createdAt metadata",
+      select:
+        "title description thumbnail media visibility tags createdAt metadata",
       populate: {
         path: "channel",
         select: "name handle stats",
@@ -99,7 +99,7 @@ const getUserLikedVideos = asyncHandler(async (req, res) => {
   });
 
   // Filter out any null targets (deleted videos)
-  const validLikedVideos = likedVideos.filter(like => like.target !== null);
+  const validLikedVideos = likedVideos.filter((like) => like.target !== null);
 
   return res.status(200).json(
     new ApiResponse(
@@ -160,7 +160,9 @@ const getUserLikedComments = asyncHandler(async (req, res) => {
   });
 
   // Filter out any null targets (deleted comments)
-  const validLikedComments = likedComments.filter(like => like.target !== null);
+  const validLikedComments = likedComments.filter(
+    (like) => like.target !== null
+  );
 
   return res.status(200).json(
     new ApiResponse(
@@ -180,10 +182,10 @@ const getUserLikedComments = asyncHandler(async (req, res) => {
   );
 });
 
-export { 
-  toggleLike, 
-  getLikeCounts, 
-  getUserLikeVideos, 
+export {
+  toggleLike,
+  getLikeCounts,
+  getUserLikeVideo,
   getUserLikedVideos,
-  getUserLikedComments 
+  getUserLikedComments,
 };

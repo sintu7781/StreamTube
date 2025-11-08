@@ -63,7 +63,7 @@ export const getLikeCounts = async (targetType, targetId) => {
 
 export const getUserVote = async (targetType, targetId) => {
   try {
-    const response = await axiosInstance.post("/v1/likes/all-likes", {
+    const response = await axiosInstance.post("/v1/likes/like", {
       targetType,
       targetId,
     });

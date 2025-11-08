@@ -58,6 +58,7 @@ import channelAnalyticsRoute from "./routes/channelAnalytics.routes.js";
 import watchHistoryRoute from "./routes/watchHistory.routes.js";
 import watchLaterRoute from "./routes/watchLater.routes.js";
 import notificationRoute from "./routes/notification.routes.js";
+import r2VideoRoute from "./routes/r2Video.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 app.use("/api/v1/auth", authRoute);
@@ -81,6 +82,8 @@ app.use("/api/v1/watch-history", watchHistoryRoute);
 app.use("/api/v1/watch-later", watchLaterRoute);
 
 app.use("/api/v1/notifications", notificationRoute);
+
+app.use("/api/v1/r2-videos", r2VideoRoute);
 
 app.use(errorHandler);
 

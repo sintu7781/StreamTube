@@ -22,10 +22,9 @@ const VideoActions = ({ video, onVideoUpdate }) => {
 
   const loadLikeData = async () => {
     try {
-      const [likeCounts, userVote] = await Promise.all([
-        getLikeCounts("Video", video._id),
-        getUserVote("Video", video._id),
-      ]);
+      const likeCounts = await getLikeCounts("Video", video._id);
+
+      const userVote = await getUserVote("Video", video._id);
 
       setLikeData({
         likes: likeCounts.data.likes,

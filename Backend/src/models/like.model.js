@@ -129,12 +129,15 @@ likeSchema.statics.toggleLike = async function (
 };
 
 likeSchema.statics.getLikesCount = async function (targetType, targetId) {
-  console.log(targetId, targetType);
+  const objectId =
+    targetId instanceof mongoose.Types.ObjectId
+      ? targetId
+      : new mongoose.Types.ObjectId(targetId);
   const result = await this.aggregate([
     {
       $match: {
         targetType,
-        target: new mongoose.Types.ObjectId(targetId),
+        target: objectId,
       },
     },
     {
@@ -144,8 +147,6 @@ likeSchema.statics.getLikesCount = async function (targetType, targetId) {
       },
     },
   ]);
-
-  console.log(result);
 
   const counts = { likes: 0, dislikes: 0 };
   result.forEach((item) => {
@@ -157,12 +158,18 @@ likeSchema.statics.getLikesCount = async function (targetType, targetId) {
 };
 
 likeSchema.statics.getUserVote = async function (userId, targetType, targetId) {
-  const like = await this.findOne({
-    user: userId,
-    targetType,
-    target: targetId,
-  });
-  return like ? like.value : 0;
+  console.log("getUserVote");
+  try {
+    const like = await this.findOne({
+      user: userId,
+      targetType,
+      target: targetId,
+    });
+    console.log(like);
+    return like ? like.value : 0;
+  } catch (error) {
+    console.log(`Error in getUserVote`);
+  }
 };
 
 likeSchema.post("save", async function (doc) {

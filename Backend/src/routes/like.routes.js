@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   getLikeCounts,
-  getUserLikeVideos,
+  getUserLikeVideo,
   toggleLike,
   getUserLikedVideos,
   getUserLikedComments,
@@ -16,7 +16,7 @@ router.use(verifyJWT);
 
 router.route("/toggle").post(toggleLike);
 
-router.route("/all-likes").get(getUserLikeVideos);
+router.route("/like").post(getUserLikeVideo);
 
 router.route("/liked-videos").get(getUserLikedVideos);
 
